@@ -79,10 +79,6 @@ WSGI_APPLICATION = 'Whispr_backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    },
     'auth' : {
         'ENGINE' : 'django.db.backends.mysql',
         'NAME' : BASE_DIR / 'auth',
@@ -90,7 +86,18 @@ DATABASES = {
         'PASSWORD' : 'root',
         'HOST' : 'localhost',
         'PORT' : '3306'
-    }
+    },
+
+    'users' : {
+        'ENGINE' : 'django.db.backends.mysql',
+        'NAME' : BASE_DIR / 'auth',
+        'USER' : 'root',
+        'PASSWORD' : 'root',
+        'HOST' : 'localhost',
+        'PORT' : '3306'
+    },
+
+
 }
 
 
