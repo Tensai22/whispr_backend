@@ -79,25 +79,10 @@ WSGI_APPLICATION = 'Whispr_backend.wsgi.application'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
 DATABASES = {
-    'auth' : {
-        'ENGINE' : 'django.db.backends.mysql',
-        'NAME' : BASE_DIR / 'auth',
-        'USER' : 'root',
-        'PASSWORD' : 'root',
-        'HOST' : 'localhost',
-        'PORT' : '3306'
-    },
-
-    'users' : {
-        'ENGINE' : 'django.db.backends.mysql',
-        'NAME' : BASE_DIR / 'auth',
-        'USER' : 'root',
-        'PASSWORD' : 'root',
-        'HOST' : 'localhost',
-        'PORT' : '3306'
-    },
-
-
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
 }
 
 
@@ -142,4 +127,9 @@ STATIC_URL = 'static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # URL вашего фронтенда
+]
+
 CORS_ALLOW_ALL_ORIGINS = True
+
