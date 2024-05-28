@@ -29,8 +29,6 @@ def register_view(request):
     username = data.get('username')
     email = data.get('email')
     password = data.get('password')
-    bio = data.get('bio', '')
-    location = data.get('location', '')
     birth_date = data.get('birth_date', None)
 
     if not username or not email or not password:
@@ -43,5 +41,5 @@ def register_view(request):
         return JsonResponse({'error': 'Email already exists'}, status=400)
 
     user = User.objects.create_user(username=username, email=email, password=password)
-    profile = Profile.objects.create(user=user, bio=bio, location=location, birth_date=birth_date)
+    profile = Profile.objects.create(user=user, birth_date=birth_date)
     return JsonResponse({'message': 'User registered successfully'})
