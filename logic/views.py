@@ -50,3 +50,8 @@ def logout_view(request):
         logout(request)
         return JsonResponse({'message': 'Logout successful'}, status=200)
     return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+
+
+def password_reset_view(request):
+    pass
