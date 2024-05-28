@@ -4,7 +4,16 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
-from .models import Profile
+
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.views import APIView
+
+from .models import Profile, Message
+from django.shortcuts import get_object_or_404
+
+from .serializers import MessageSerializer
+
 
 @csrf_exempt
 def login_view(request):
@@ -50,3 +59,29 @@ def logout_view(request):
         logout(request)
         return JsonResponse({'message': 'Logout successful'}, status=200)
     return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+
+
+def password_reset_view(request):
+    pass
+
+
+class SendMessageView(APIView):
+    def post(self, request):
+        sender = request.user
+        recipient_id = request.data.get('recipient')
+        text = request.data.get('text')
+
+        recipient = get_object_or_404(User, id=recipient_id)
+
+        message = Message.objects.create(sender=sender, recipient=recipient, text=text)
+        serializer = MessageSerializer(message)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+class ReceivedMessagesView(APIView):
+    def get(self, request):
+        user = request.user
+        received_messages = Message.objects.filter(recipient=user)
+        serializer = MessageSerializer(received_messages, many=True)
+        return Response(serializer.data)
