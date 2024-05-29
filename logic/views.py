@@ -1,17 +1,15 @@
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
-
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
 from .models import Profile, Message
-from django.shortcuts import get_object_or_404
-
 from .serializers import MessageSerializer
 
 
@@ -61,6 +59,35 @@ def logout_view(request):
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
 
+@csrf_exempt
+@login_required
+@require_POST
+def password_change_view(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        old_password = data.get('old_password')
+        new_password = data.get('new_password')
+        confirm_new_password = data.get('confirm_new_password')
+
+        if not old_password or not new_password or not confirm_new_password:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
+
+        if new_password != confirm_new_password:
+            return JsonResponse({'error': 'New passwords do not match'}, status=400)
+
+        user = request.user
+        if not user.check_password(old_password):
+            return JsonResponse({'error': 'Old password is incorrect'}, status=400)
+
+        user.set_password(new_password)
+        user.save()
+        return JsonResponse({'message': 'Password changed successfully'}, status=200)
+
+    return JsonResponse({'message': 'Method not allowed'}, status=405)
+
+@login_required
+def password_cahnge_done_view(request):
+    return JsonResponse({'message': 'Password change confirmed'}, status=200)
 
 def password_reset_view(request):
     pass
@@ -77,6 +104,8 @@ class SendMessageView(APIView):
         message = Message.objects.create(sender=sender, recipient=recipient, text=text)
         serializer = MessageSerializer(message)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
 
 
 class ReceivedMessagesView(APIView):
