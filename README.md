@@ -13,4 +13,5 @@ password: AVNS_qs4OyVdu1pCCsV6yaIj
 host: whispr-whispr.i.aivencloud.com
 name database: defaultdb
 
+
 python -m pip install Pillow
