@@ -6,10 +6,11 @@ name: admin
 password: admin
 
 Команда для подключения к mysql 
-mysql -u whispr_vastgasmen -P 3307 -pb880a7e5e546663844d3ae617a7eb836e9ae4bdb -h v45.h.filess.io whispr_vastgasmen
-user: whispr_vastgasmen
-port: 3307
-password: b880a7e5e546663844d3ae617a7eb836e9ae4bdb
-host: v45.h.filess.io
+mysql -u avnadmin -P 20839 -pAVNS_qs4OyVdu1pCCsV6yaIj -h whispr-whispr.i.aivencloud.com defaultdb
+user: avnadmin
+port: 20839
+password: AVNS_qs4OyVdu1pCCsV6yaIj
+host: whispr-whispr.i.aivencloud.com
+name database: defaultdb
 
-pip install python-dotenv
+python -m pip install Pillow

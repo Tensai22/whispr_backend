@@ -82,11 +82,11 @@ WSGI_APPLICATION = 'Whispr_backend.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'whispr_vastgasmen',
-        'USER' : 'whispr_vastgasmen',
-        'PASSWORD' : "b880a7e5e546663844d3ae617a7eb836e9ae4bdb",
-        'HOST' : 'v45.h.filess.io',
-        'PORT' : '3307',
+        'NAME': 'defaultdb',
+        'USER' : 'avnadmin',
+        'PASSWORD' : "AVNS_qs4OyVdu1pCCsV6yaIj",
+        'HOST' : 'whispr-whispr.i.aivencloud.com',
+        'PORT' : '20839',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
         },
