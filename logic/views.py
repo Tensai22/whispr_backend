@@ -1,8 +1,15 @@
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
+from django.template.loader import render_to_string
+from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
 import json
@@ -14,6 +21,7 @@ from .serializers import MessageSerializer
 
 
 @csrf_exempt
+@require_POST
 def login_view(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -52,6 +60,7 @@ def register_view(request):
     return JsonResponse({'message': 'User registered successfully'})
 
 @csrf_exempt
+@require_POST
 def logout_view(request):
     if request.method == 'POST':
         logout(request)
@@ -81,17 +90,61 @@ def password_change_view(request):
 
         user.set_password(new_password)
         user.save()
-        return JsonResponse({'message': 'Password changed successfully'}, status=200)
+        return JsonResponse({'message': 'Password change confirmed'}, status=200)
 
     return JsonResponse({'message': 'Method not allowed'}, status=405)
 
-@login_required
-def password_cahnge_done_view(request):
-    return JsonResponse({'message': 'Password change confirmed'}, status=200)
 
+@csrf_exempt
+@require_POST
 def password_reset_view(request):
-    pass
+    data = json.loads(request.body)
+    email = data.get('email')
 
+    if not email:
+        return JsonResponse({'error': 'Email is required'}, status=400)
+
+    try:
+        user = User.objects.get(email=email)
+    except User.DoesNotExist:
+        return JsonResponse({'error': 'User with this email does not exist'}, status=400)
+
+    token = default_token_generator.check_token(user)
+    uid = urlsafe_base64_encode(force_bytes(user.pk))
+    reset_link = request.build_absolute_uri(reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token}))
+
+    subject = 'Password Reset Request'
+    message = render_to_string('password_reset_email.html', {'user': user, 'reset_link': reset_link,})
+
+    send_mail(subject, message, settings.DEFAULT_FROM_EMAIL, [user.email])
+
+    return JsonResponse({'message': 'Password reset link has been sent to your email'}, status=200)
+
+@csrf_exempt
+@require_POST
+def password_reset_confirm_view(request, uidb64, token):
+    data = json.loads(request.body)
+    new_password = data.get('new_password')
+    confirm_password = data.get('confirm_password')
+
+    if not new_password or not confirm_password:
+        return JsonResponse({'error': 'New password and confirmation are required'}, status=400)
+
+    if new_password != confirm_password:
+        return JsonResponse({'error': 'Passwords do not match'}, status=400)
+
+    try:
+        uid = urlsafe_base64_decode(uidb64).decode()
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+
+    if user is not None and default_token_generator(user, token):
+        user.set_password(new_password)
+        user.save()
+        return JsonResponse({'message': 'Password has been reset successfully'}, status=200)
+    else:
+        return JsonResponse({'error': 'Invalid reset link'}, status=400)
 
 class SendMessageView(APIView):
     def post(self, request):
