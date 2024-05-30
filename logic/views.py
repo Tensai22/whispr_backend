@@ -111,7 +111,7 @@ def password_reset_view(request):
 
     token = default_token_generator.make_token(user)
     uid = urlsafe_base64_encode(force_bytes(user.pk))
-    reset_link = request.build_absolute_uri(reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token}))
+    reset_link = f'http://localhost:3000/reset/{uid}/{token}'
 
     subject = 'Password Reset Request'
     message = render_to_string('password_reset_email.html', {'user': user, 'reset_link': reset_link})
