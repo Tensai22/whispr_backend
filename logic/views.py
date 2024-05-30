@@ -7,7 +7,6 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.template.loader import render_to_string
-from django.urls import reverse
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
@@ -142,6 +141,7 @@ def password_reset_confirm_view(request, uidb64, token):
     if user is not None and default_token_generator.check_token(user, token):
         user.set_password(new_password)
         user.save()
+        send_mail()
         return JsonResponse({'message': 'Password has been reset successfully'}, status=200)
     else:
         return JsonResponse({'error': 'Invalid reset link'}, status=400)
