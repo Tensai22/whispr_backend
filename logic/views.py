@@ -139,7 +139,7 @@ def password_reset_confirm_view(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
 
-    if user is not None and default_token_generator(user, token):
+    if user is not None and default_token_generator.check_token(user, token):
         user.set_password(new_password)
         user.save()
         return JsonResponse({'message': 'Password has been reset successfully'}, status=200)
