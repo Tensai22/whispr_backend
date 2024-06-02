@@ -15,3 +15,5 @@ name database: defaultdb
 
 
 python -m pip install Pillow
+python -m pip install dephny
+python -m pip install channels

@@ -33,6 +33,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -42,6 +43,8 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'logic',
+    'channels',
+    'chat',
 ]
 
 MIDDLEWARE = [
@@ -161,3 +164,19 @@ EMAIL_HOST_PASSWORD = 'eczpayqupcpesauh'
 DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 SERVER_EMAIL = EMAIL_HOST_USER
 EMAIL_ADMIN = 'bakooofficial@gmail.com'
+
+
+#добавления приложения asgi chat
+ASGI_APPLICATION = 'Whispr_backend.asgi.application'
+
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+    }
+}
+
+#Это означает, что всякий раз, когда пользователь войдет в систему,
+#он будет отправлен на страницу чата как проверенный
+#пользователь и сможет общаться в чате.
+LOGIN_REDIRECT_URL = "chat-page"
+LOGOUT_REDIRECT_URL = "login-user"
