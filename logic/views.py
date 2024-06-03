@@ -19,6 +19,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Profile, Message
 from .serializers import MessageSerializer, UserSerializer
+from django.core import serializers
 
 
 @csrf_exempt
@@ -40,25 +41,31 @@ def login_view(request):
 @csrf_exempt
 @require_POST
 def register_view(request):
-    data = json.loads(request.body)
+    try:
+        data = json.loads(request.body)
 
-    username = data.get('username')
-    email = data.get('email')
-    password = data.get('password')
-    birth_date = data.get('birth_date', None)
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        birth_date = data.get('birth_date', None)
 
-    if not username or not email or not password:
-        return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-    if User.objects.filter(username=username).exists():
-        return JsonResponse({'error': 'Username already exists'}, status=400)
+        if not username or not email or not password:
+            return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-    if User.objects.filter(email=email).exists():
-        return JsonResponse({'error': 'Email already exists'}, status=400)
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({'error': 'Username already exists'}, status=400)
 
-    user = User.objects.create_user(username=username, email=email, password=password)
-    profile = Profile.objects.create(user=user, birth_date=birth_date)
-    return JsonResponse({'message': 'User registered successfully'})
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({'error': 'Email already exists'}, status=400)
+
+        user = User.objects.create_user(username=username, email=email, password=password)
+        Profile.objects.create(user=user, birth_date=birth_date)
+        return JsonResponse({'message': 'User registered successfully'})
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
+
+
 
 class profile_update_view(RetrieveUpdateAPIView):
     queryset = User.objects.all()
@@ -184,6 +191,22 @@ def search_users(request):
     query = request.GET.get('q', '')
     if query:
         users = User.objects.filter(username__icontains=query)
-        users_list = [{"id": user.id, "username": user.username} for user in users]
+        users_json = serializers.serialize('json', users, fields=('id', 'username'))
+        users_data = json.loads(users_json)
+        users_list = [{"id": user['pk'], "username": user['fields']['username']} for user in users_data]
         return JsonResponse(users_list, safe=False)
     return JsonResponse([], safe=False)
+
+def send_message(request):
+    if request.method == 'POST':
+        data = json.loads(request.body)
+        sender = request.user
+        recipient_id = data.get('recipient')
+        text = data.get('text')
+        try:
+            recipient = User.objects.get(id=recipient_id)
+            message = Message.objects.create(sender=sender, recipient=recipient, text=text)
+            return JsonResponse({'message': 'Message sent successfully'}, status=200)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Recipient not found'}, status=404)
+    return JsonResponse({'error': 'Invalid request'}, status=400)

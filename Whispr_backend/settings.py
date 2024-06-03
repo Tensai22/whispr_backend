@@ -12,7 +12,7 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 
-from logic.middleware import LastActiveMiddleware
+from logic.middleware import SetUserMiddleware, LastActiveMiddleware
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -57,6 +57,7 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'logic.middleware.LastActiveMiddleware'
+    #'logic.middleware.SetUserMiddleware',
 ]
 
 ROOT_URLCONF = 'Whispr_backend.urls'
