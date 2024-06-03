@@ -186,6 +186,19 @@ class ReceivedMessagesView(APIView):
         return Response(serializer.data)
 
 
+def profile_view(request, id):
+    user = get_object_or_404(User, id=id)
+    profile = get_object_or_404(Profile, user=user)
+    user_data = {
+        'id' : user.id,
+        'username' : user.username,
+        'email' : user.email,
+        'birth_date' : profile.birth_date,
+        'last_activity' : profile.last_activity,
+    }
+    return JsonResponse(user_data, status=200)
+
+
 @csrf_exempt
 def search_users(request):
     query = request.GET.get('q', '')

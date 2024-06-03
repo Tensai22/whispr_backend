@@ -6,7 +6,7 @@ from .models import User, Message, Profile
 class ProfileSerializer(serializers.ModelSerializer):
     class Meta:
         model = Profile
-        fields = ['photo', 'birth_date']
+        fields = ['photo', 'birth_date', 'last_activity']
 
 
 class UserSerializer(serializers.ModelSerializer):
