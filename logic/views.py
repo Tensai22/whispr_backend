@@ -167,3 +167,13 @@ class ReceivedMessagesView(APIView):
         received_messages = Message.objects.filter(recipient=user)
         serializer = MessageSerializer(received_messages, many=True)
         return Response(serializer.data)
+
+
+@csrf_exempt
+def search_users(request):
+    query = request.GET.get('q', '')
+    if query:
+        users = User.objects.filter(username__icontains=query)
+        users_list = [{"id": user.id, "username": user.username} for user in users]
+        return JsonResponse(users_list, safe=False)
+    return JsonResponse([], safe=False)
