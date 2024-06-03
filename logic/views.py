@@ -163,6 +163,7 @@ def password_reset_confirm_view(request, uidb64, token):
     else:
         return JsonResponse({'error': 'Invalid reset link'}, status=400)
 
+
 class SendMessageView(APIView):
     def post(self, request):
         sender = request.user
@@ -184,6 +185,19 @@ class ReceivedMessagesView(APIView):
         received_messages = Message.objects.filter(recipient=user)
         serializer = MessageSerializer(received_messages, many=True)
         return Response(serializer.data)
+
+
+def profile_view(request, id):
+    user = get_object_or_404(User, id=id)
+    profile = get_object_or_404(Profile, user=user)
+    user_data = {
+        'id': user.id,
+        'username': user.username,
+        'email': user.email,
+        'birth_date': profile.birth_date,
+        'last_activity': profile.last_activity,
+    }
+    return JsonResponse(user_data, status=200)
 
 
 @csrf_exempt
