@@ -1,3 +1,4 @@
+import json
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.tokens import default_token_generator
@@ -11,12 +12,13 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-import json
 from rest_framework import status
+from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from .models import Profile, Message
-from .serializers import MessageSerializer
+from .serializers import MessageSerializer, UserSerializer
 
 
 @csrf_exempt
@@ -57,6 +59,14 @@ def register_view(request):
     user = User.objects.create_user(username=username, email=email, password=password)
     profile = Profile.objects.create(user=user, birth_date=birth_date)
     return JsonResponse({'message': 'User registered successfully'})
+
+class profile_update_view(RetrieveUpdateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
 
 @csrf_exempt
 @require_POST
