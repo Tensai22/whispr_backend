@@ -3,7 +3,7 @@ from django.urls import path, include
 from chat import views as chat_views
 urlpatterns = [
 
-    path('', chat_views.chatPage, name='chat-page'),
+    path('', chat_views.chat_view, name='chat-page'),
 
     #сессия логина
     path('auth/login/', LoginView.as_view
