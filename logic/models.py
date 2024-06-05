@@ -1,14 +1,26 @@
 from django.db import models
-from django.contrib.auth.models import User, AbstractUser
+from django.contrib.auth.models import User, AbstractUser, Group, Permission
 from datetime import timedelta
 from django.utils import timezone
 
-class CustomUser(AbstractUser):
-    pass
+class CustomUser(User):
+    class Meta:
+        proxy = True
+
+CustomUser.user_permissions.field.related_name = 'custom_user_permissions'
+
+
+class CustomGroup(Group):
+    class Meta:
+        proxy = True
+        verbose_name = 'Custom Group'
+        verbose_name_plural = 'Custom Groups'
+
+CustomUser.groups.field.related_name = 'custom_user_groups'
 
 class Profile(models.Model):
     photo = models.ImageField(upload_to='profile_photos/', default='profile_photos/default_profile_image.jpeg', blank=True)
-    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     birth_date = models.DateField(null=True, blank=True)
     last_activity = models.DateTimeField(default=timezone.now)
 
@@ -25,7 +37,7 @@ class Chat(models.Model):
 
 class Message(models.Model):
     chat = models.ForeignKey(Chat, related_name='messages', on_delete=models.CASCADE)
-    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    sender = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='sender_messages')
     content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
 
