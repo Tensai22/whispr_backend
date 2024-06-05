@@ -19,12 +19,13 @@ class Profile(models.Model):
             return True
         return False
 
+class Chat(models.Model):
+    participants = models.ManyToManyField(User)
+
 class Message(models.Model):
-    sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
-    recipient = models.ForeignKey(User, related_name='received_messages', on_delete=models.CASCADE, default=0)
-    text = models.TextField(default=0)
+    chat = models.ForeignKey(Chat, related_name='messages', on_delete=models.CASCADE)
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    def __str__(self):
-        return f"Message from {self.sender} to {self.recipient} on {self.timestamp}"
 
 

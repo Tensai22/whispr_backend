@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Message, Profile
+from .models import User, Message, Profile, Chat
 
 
 
@@ -38,3 +38,11 @@ class MessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = Message
         fields = ['id', 'sender', 'recipient', 'text', 'timestamp']
+
+class ChatSerializer(serializers.ModelSerializer):
+    participants = UserSerializer(many=True, read_only=True)
+    messages = MessageSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = Chat
+        fields = ['id', 'participants', "messages"]
