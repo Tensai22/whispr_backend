@@ -1,6 +1,6 @@
 import json
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
@@ -12,15 +12,16 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
-from rest_framework import status
+from rest_framework import status, generics
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import Profile, Message
-from .serializers import MessageSerializer, UserSerializer
+from .models import Profile, Message, CustomUser
+from .serializers import MessageSerializer, UserSerializer, ProfileSerializer
 from django.core import serializers
 
+User = get_user_model()
 
 @csrf_exempt
 @require_POST
@@ -49,17 +50,16 @@ def register_view(request):
         password = data.get('password')
         birth_date = data.get('birth_date', None)
 
-
         if not username or not email or not password:
             return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-        if User.objects.filter(username=username).exists():
+        if CustomUser.objects.filter(username=username).exists():
             return JsonResponse({'error': 'Username already exists'}, status=400)
 
-        if User.objects.filter(email=email).exists():
+        if CustomUser.objects.filter(email=email).exists():
             return JsonResponse({'error': 'Email already exists'}, status=400)
 
-        user = User.objects.create_user(username=username, email=email, password=password)
+        user = CustomUser.objects.create_user(username=username, email=email, password=password)
         Profile.objects.create(user=user, birth_date=birth_date)
         return JsonResponse({'message': 'User registered successfully'})
     except Exception as e:
@@ -67,13 +67,21 @@ def register_view(request):
 
 
 
-class profile_update_view(RetrieveUpdateAPIView):
+class UserCreateView(generics.CreateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
+
+    def perform_create(self, serializer):
+        user = serializer.save()
+        Profile.objects.create(user=user)
+
+class ProfileUpdateView(generics.RetrieveUpdateAPIView):
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
     permission_classes = [IsAuthenticated]
 
     def get_object(self):
-        return self.request.user
+        return self.request.user.profile
 
 @csrf_exempt
 @require_POST
@@ -224,3 +232,4 @@ def send_message(request):
         except User.DoesNotExist:
             return JsonResponse({'error': 'Recipient not found'}, status=404)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+

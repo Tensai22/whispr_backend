@@ -1,3 +1,5 @@
+Установка зависимостей
+pip install -r requirements.txt
 Запуск программы
 python manage.py runserver
 
@@ -14,4 +16,3 @@ host: whispr-whispr.i.aivencloud.com
 name database: defaultdb
 
 
-pip install -r requirements.txt
