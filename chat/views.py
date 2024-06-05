@@ -1,10 +1,10 @@
-from django.shortcuts import render, redirect
+from rest_framework import generics
+from .models import Message
+from .serializers import MessageSerializer
 
-# Create your views here.
+class MessageListCreateView(generics.ListCreateAPIView):
+    queryset = Message.objects.all().order_by('timestamp')
+    serializer_class = MessageSerializer
 
-
-def chatPage(request, *args, **kwargs):
-    if not request.user.is_authenticated:
-        return redirect('login-user')
-    context = {}
-    return render(request, 'chat/chatPage.html', context)
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

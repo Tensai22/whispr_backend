@@ -3,9 +3,12 @@ from django.contrib.auth.models import User
 from datetime import timedelta
 from django.utils import timezone
 
+class CustomUser(AbstractUser):
+    pass
+
 class Profile(models.Model):
     photo = models.ImageField(upload_to='profile_photos/', default='profile_photos/default_profile_image.jpeg', blank=True)
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE)
     birth_date = models.DateField(null=True, blank=True)
     last_activity = models.DateTimeField(default=timezone.now)
 
@@ -15,9 +18,7 @@ class Profile(models.Model):
     @property
     def is_online(self):
         now = timezone.now()
-        if now - self.last_activity < timedelta(minutes=2):
-            return True
-        return False
+        return (now - self.last_activity) < timedelta(minutes=2)
 
 class Message(models.Model):
     sender = models.ForeignKey(User, related_name='sent_messages', on_delete=models.CASCADE)
