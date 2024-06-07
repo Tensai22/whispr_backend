@@ -11,11 +11,10 @@ urlpatterns = [
     # path('register/', register_view, name='register'),
     path('logout/', logout_view, name='logout'),
     path('id/<int:id>', profile_view, name='profile'),
-    path('profile/update/', profile_update_view.as_view(), name='profile_update'),
-    #path('profile/password_change/', password_change_view, name='password_change'),
+    path('update/', profile_update_view.as_view(), name='profile_update'),
+    path('change_password/', password_change_view, name='password_change'),
     path('password_reset/', password_reset_view, name='password_reset'),
     path('password_reset_confirm/<uidb64>/<token>/', password_reset_confirm_view, name='password_reset_confirm'),
-
 
     path('search_users/', search_users, name='search_users'),
 
