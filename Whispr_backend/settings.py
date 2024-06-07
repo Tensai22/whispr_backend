@@ -9,14 +9,13 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
-
+from datetime import timedelta
 from pathlib import Path
 
-from logic.middleware import SetUserMiddleware, LastActiveMiddleware
+from logic.middleware import SessionAuthenticationMiddleware
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.0/howto/deployment/checklist/
@@ -29,11 +28,10 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
-    #'daphne',
+    # 'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,7 +43,22 @@ INSTALLED_APPS = [
     'logic',
     'channels',
     'chat',
+    'rest_framework_simplejwt.token_blacklist',
 ]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+}
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=7),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+    'UPDATE_LAST_LOGIN': True,
+}
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -56,8 +69,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'corsheaders.middleware.CorsMiddleware',
-    'logic.middleware.LastActiveMiddleware'
-    #'logic.middleware.SetUserMiddleware',
+    'logic.middleware.SessionAuthenticationMiddleware',
 ]
 
 ROOT_URLCONF = 'Whispr_backend.urls'
@@ -81,7 +93,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'Whispr_backend.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
@@ -91,16 +102,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'defaultdb',
-        'USER' : 'avnadmin',
-        'PASSWORD' : "AVNS_qs4OyVdu1pCCsV6yaIj",
-        'HOST' : 'whispr-whispr.i.aivencloud.com',
-        'PORT' : '20839',
+        'USER': 'avnadmin',
+        'PASSWORD': "AVNS_qs4OyVdu1pCCsV6yaIj",
+        'HOST': 'whispr-whispr.i.aivencloud.com',
+        'PORT': '20839',
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
         },
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
@@ -120,7 +130,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -131,8 +140,6 @@ TIME_ZONE = 'UTC'
 USE_I18N = True
 
 USE_TZ = True
-
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.0/howto/static-files/
@@ -150,13 +157,17 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # URL вашего фронтенда
 ]
-
+CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_HEADERS = [
+    'content-type',
+    'authorization',
+    'x-csrftoken',  # Добавление CSRF токена
+]
 CSRF_TRUSTED_ORIGINS = ["http://localhost:3000"]
 
-
-#настройка сервиса по отправке почтовых сообщений
-#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+# настройка сервиса по отправке почтовых сообщений
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'smtp.yandex.ru'
 EMAIL_PORT = 465
 EMAIL_USE_SSL = True
@@ -166,8 +177,7 @@ DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
 SERVER_EMAIL = EMAIL_HOST_USER
 EMAIL_ADMIN = 'bakooofficial@gmail.com'
 
-
-#добавления приложения asgi chat
+# добавления приложения asgi chat
 ASGI_APPLICATION = 'Whispr_backend.asgi.application'
 
 CHANNEL_LAYERS = {
@@ -176,8 +186,8 @@ CHANNEL_LAYERS = {
     }
 }
 
-#Это означает, что всякий раз, когда пользователь войдет в систему,
-#он будет отправлен на страницу чата как проверенный
-#пользователь и сможет общаться в чате.
+# Это означает, что всякий раз, когда пользователь войдет в систему,
+# он будет отправлен на страницу чата как проверенный
+# пользователь и сможет общаться в чате.
 LOGIN_REDIRECT_URL = "chat-page"
 LOGOUT_REDIRECT_URL = "login-user"
