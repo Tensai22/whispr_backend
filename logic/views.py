@@ -17,25 +17,67 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+
 from .models import Profile, ChatMessage
 from .serializers import UserSerializer, ChatMessageSerializer
 from django.core import serializers
 
 
+def get_tokens_for_user(user):
+    refresh = RefreshToken.for_user(user)
+    return {
+        'refresh': str(refresh),
+        'access': str(refresh.access_token),
+    }
+
+
+class MyTokenObtainPairView(TokenObtainPairView):
+    serializer_class = TokenObtainPairSerializer
+
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            request.session['token'] = response.data['access']
+            request.session['refresh_token'] = response.data['refresh']
+        return response
+
+
+class MyTokenRefreshView(TokenRefreshView):
+    serializer_class = TokenRefreshSerializer
+
+    def post(self, request, *args, **kwargs):
+        # Восстанавливаем refresh token из сессии
+        if 'refresh_token' in request.session:
+            request.data['refresh'] = request.session['refresh_token']
+
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == status.HTTP_200_OK:
+            request.session['token'] = response.data['access']
+        return response
+
+
 @csrf_exempt
 @require_POST
 def login_view(request):
-    if request.method == 'POST':
+    try:
         data = json.loads(request.body)
         username = data.get('username')
         password = data.get('password')
         user = authenticate(request, username=username, password=password)
         if user is not None:
             login(request, user)
-            return JsonResponse({'message': 'Login successful'}, status=200)
+            tokens = get_tokens_for_user(user)
+            request.session['access_token'] = tokens['access']
+            request.session['refresh_token'] = tokens['refresh']
+            return JsonResponse(
+                {'message': 'Login successful', 'access': tokens['access'], 'refresh': tokens['refresh']}, status=200)
         else:
             return JsonResponse({'message': 'Invalid credentials'}, status=400)
-    return JsonResponse({'message': 'Method not allowed'}, status=405)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 @csrf_exempt
@@ -43,12 +85,10 @@ def login_view(request):
 def register_view(request):
     try:
         data = json.loads(request.body)
-
         username = data.get('username')
         email = data.get('email')
         password = data.get('password')
         birth_date = data.get('birth_date', None)
-
 
         if not username or not email or not password:
             return JsonResponse({'error': 'Missing required fields'}, status=400)
@@ -61,28 +101,18 @@ def register_view(request):
 
         user = User.objects.create_user(username=username, email=email, password=password)
         Profile.objects.create(user=user, birth_date=birth_date)
-        return JsonResponse({'message': 'User registered successfully'})
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
 
-
-@csrf_exempt
-@require_POST
-def send_message(request):
-    try:
-        data = json.loads(request.body)
-        user = request.user
-        text = data.get('text')
-
-        if not user.is_authenticated:
-            return JsonResponse({'error': 'User not authenticated'}, status=401)
-
-        if not text:
-            return JsonResponse({'error': 'Message text is required'}, status=400)
-
-        chat_message = ChatMessage.objects.create(sender=user, text=text)
-        return JsonResponse(ChatMessageSerializer(chat_message).data, status=201)
-
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            tokens = get_tokens_for_user(user)
+            request.session['access_token'] = tokens['access']
+            request.session['refresh_token'] = tokens['refresh']
+            return JsonResponse(
+                {'message': 'User registered successfully', 'access': tokens['access'], 'refresh': tokens['refresh']},
+                status=200)
+        else:
+            return JsonResponse({'message': 'Registration failed, try logging in'}, status=400)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
@@ -92,11 +122,27 @@ def send_message(request):
 def get_messages(request):
     try:
         messages = ChatMessage.objects.all().order_by('-timestamp')
-        serialized_messages = ChatMessageSerializer(messages, many=True).data
-        return JsonResponse({'messages': serialized_messages}, safe=False)
+        serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
+        return JsonResponse({'messages': serializer.data}, status=200)
     except Exception as e:
         return JsonResponse({'error': str(e)}, status=500)
 
+
+@csrf_exempt
+@require_POST
+def send_message(request):
+    try:
+        data = json.loads(request.body)
+        text = data.get('text')
+        if not text:
+            return JsonResponse({'error': 'No message text provided'}, status=400)
+
+        message = ChatMessage.objects.create(sender=request.user, text=text)
+        message_data = {'id': message.id, 'sender': message.sender.username, 'text': message.text,
+                        'timestamp': message.timestamp}
+        return JsonResponse(message_data, status=201)
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 
 class profile_update_view(RetrieveUpdateAPIView):
@@ -106,6 +152,7 @@ class profile_update_view(RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user
+
 
 @csrf_exempt
 @require_POST
@@ -168,6 +215,7 @@ def password_reset_view(request):
 
     return JsonResponse({'message': 'Password reset link has been sent to your email'}, status=200)
 
+
 @csrf_exempt
 @require_POST
 def password_reset_confirm_view(request, uidb64, token):
@@ -196,9 +244,6 @@ def password_reset_confirm_view(request, uidb64, token):
         return JsonResponse({'error': 'Invalid reset link'}, status=400)
 
 
-
-
-
 def profile_view(request, id):
     user = get_object_or_404(User, id=id)
     profile = get_object_or_404(Profile, user=user)
@@ -222,4 +267,3 @@ def search_users(request):
         users_list = [{"id": user['pk'], "username": user['fields']['username']} for user in users_data]
         return JsonResponse(users_list, safe=False)
     return JsonResponse([], safe=False)
-

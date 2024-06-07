@@ -32,7 +32,13 @@ class UserSerializer(serializers.ModelSerializer):
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender = serializers.CharField(source='sender.username', read_only=True)
+    sender_photo = serializers.SerializerMethodField()
 
     class Meta:
         model = ChatMessage
-        fields = ['id', 'sender', 'text', 'timestamp']
+        fields = ['id', 'sender', 'sender_photo', 'text', 'timestamp']
+
+    def get_sender_photo(self, obj):
+        request = self.context.get('request')
+        photo_url = obj.sender.profile.photo.url if obj.sender.profile.photo else '/media/profile_photos/default_profile_image.jpeg'
+        return request.build_absolute_uri(photo_url) if request else photo_url

@@ -4,11 +4,11 @@ from django.conf import settings
 from django.conf.urls.static import static
 from .views import login_view, register_view, logout_view, profile_update_view, password_change_view, \
     password_reset_view, password_reset_confirm_view, profile_view, search_users, \
-    send_message, get_messages
+    send_message, get_messages, MyTokenObtainPairView, MyTokenRefreshView
 
 urlpatterns = [
-    path('login/', login_view, name='login'),
-    path('register/', register_view, name='register'),
+    # path('login/', login_view, name='login'),
+    # path('register/', register_view, name='register'),
     path('logout/', logout_view, name='logout'),
     path('id/<int:id>', profile_view, name='profile'),
     path('profile/update/', profile_update_view.as_view(), name='profile_update'),
@@ -19,6 +19,9 @@ urlpatterns = [
 
     path('search_users/', search_users, name='search_users'),
 
+    path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
+    path('register/', register_view, name='register'),
     path('send_message/', send_message, name='send_message'),
     path('get_messages/', get_messages, name='get_messages'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
