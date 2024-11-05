@@ -26,6 +26,8 @@ from .serializers import UserSerializer, ChatMessageSerializer
 from django.core import serializers
 
 
+
+#отсортировано по дате создания
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
