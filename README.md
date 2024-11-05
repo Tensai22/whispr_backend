@@ -23,4 +23,4 @@ Backend хостинг beget.com
 
 Frontend хостинг netlify.com
 Ссылка на frontend страницу whisper0.netlify.app
-
+KCAS
