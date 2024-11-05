@@ -25,7 +25,7 @@ from .models import Profile, ChatMessage
 from .serializers import UserSerializer, ChatMessageSerializer
 from django.core import serializers
 
-
+#A
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
