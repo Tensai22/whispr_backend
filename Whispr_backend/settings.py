@@ -98,7 +98,16 @@ WSGI_APPLICATION = 'Whispr_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-
+#В случай если отсуствует доступ к интернету
+# использовать локальный БД sqlite
+'''              
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+'''
 DATABASES = {
 
     'default': {
@@ -109,6 +118,9 @@ DATABASES = {
         'HOST': 'whispr-whispr.i.aivencloud.com',
         'PORT': '20839',
         'OPTIONS': {
+            'ssl': {
+                'ca': os.path.join(BASE_DIR, 'ca.pem')
+            },
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
         },
     }
