@@ -1,7 +1,7 @@
-from django.urls import path, include
-from chat.consumers import ChatConsumer
+from django.urls import re_path
 
-#Роутер чата который реализует функцию
+from . import consumers
+
 websocket_urlpatterns = [
-    path('', ChatConsumer.as_asgi()),
+    re_path(r'ws/chat/(?P<room_name>\w+)/$', consumers.ChatConsumer.as_asgi()),
 ]

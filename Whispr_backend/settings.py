@@ -32,7 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # 'daphne',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'channels',
     'chat',
     'rest_framework_simplejwt.token_blacklist',
+    'channels_redis',
 ]
 
 REST_FRAMEWORK = {
@@ -98,7 +99,16 @@ WSGI_APPLICATION = 'Whispr_backend.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-
+#В случай если отсуствует доступ к интернету
+# использовать локальный БД sqlite
+'''              
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
+'''
 DATABASES = {
 
     'default': {
@@ -109,6 +119,9 @@ DATABASES = {
         'HOST': 'whispr-whispr.i.aivencloud.com',
         'PORT': '20839',
         'OPTIONS': {
+            'ssl': {
+                'ca': os.path.join(BASE_DIR, 'ca.pem')
+            },
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
         },
     }
@@ -184,7 +197,10 @@ ASGI_APPLICATION = 'Whispr_backend.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG' : {
+            "hosts": [('127.0.0.1', 6379)],
+        }
     }
 }
 

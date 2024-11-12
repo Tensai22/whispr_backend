@@ -18,9 +18,5 @@ password: AVNS_qs4OyVdu1pCCsV6yaIj
 host: whispr-whispr.i.aivencloud.com
 name database: defaultdb
 
-Backend хостинг beget.com
-Ссылка на backend страницу amdfx9nx.beget.com
-
-Frontend хостинг netlify.com
-Ссылка на frontend страницу whisper0.netlify.app
-KCAS
+Чтобы работало websocket НЕ ОТКЛЮЧАТЬ daphne из INSTALLED_APP.
+http://127.0.0.1/chat
