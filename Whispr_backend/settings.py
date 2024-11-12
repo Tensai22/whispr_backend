@@ -32,7 +32,7 @@ ALLOWED_HOSTS = []
 # Application definition
 
 INSTALLED_APPS = [
-    # 'daphne',
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'channels',
     'chat',
     'rest_framework_simplejwt.token_blacklist',
+    'channels_redis',
 ]
 
 REST_FRAMEWORK = {
@@ -196,7 +197,10 @@ ASGI_APPLICATION = 'Whispr_backend.asgi.application'
 
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels.layers.InMemoryChannelLayer'
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG' : {
+            "hosts": [('127.0.0.1', 6379)],
+        }
     }
 }
 
