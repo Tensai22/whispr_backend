@@ -13,7 +13,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from rest_framework import status
-from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.generics import RetrieveUpdateAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -21,13 +21,12 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import Profile, ChatMessage
-from .serializers import UserSerializer, ChatMessageSerializer
+from .models import Profile, ChatMessage, Group, GroupMembership
+from .serializers import UserSerializer, ChatMessageSerializer, GroupSerializer
 from django.core import serializers
 
 
 
-#отсортировано по дате создания
 def get_tokens_for_user(user):
     refresh = RefreshToken.for_user(user)
     return {
@@ -269,3 +268,27 @@ def search_users(request):
         users_list = [{"id": user['pk'], "username": user['fields']['username']} for user in users_data]
         return JsonResponse(users_list, safe=False)
     return JsonResponse([], safe=False)
+
+
+
+class GroupListView(ListAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class GroupCreateView(ListCreateAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class GroupDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Group.objects.all()
+    serializer_class = GroupSerializer
+    permission_classes = [IsAuthenticated]
+
+class GroupMembershipListView(ListAPIView):
+    queryset = GroupMembership.objects.all()
+    serializer_class = GroupMembershipSerializer
+    permission_classes = [IsAuthenticated]
