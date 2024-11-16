@@ -27,5 +27,5 @@ name database: defaultdb
 3. Команда: Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
 4. Установка редис. Нужно определенная версия. 
 5. Команда: choco install redis-64 --version 3.0.503
-6. Команда для запуска сервер redis: redis-server
+6. Команда для запуска сервер redis: redis-server 
 http://127.0.0.1/chat
