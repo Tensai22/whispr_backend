@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Profile, ChatMessage, Group
+from .models import User, Profile, ChatMessage, Group, GroupMembership
 
 
 class ProfileSerializer(serializers.ModelSerializer):
@@ -43,12 +43,15 @@ class ChatMessageSerializer(serializers.ModelSerializer):
         photo_url = obj.sender.profile.photo.url if obj.sender.profile.photo else '/media/profile_photos/default_profile_image.jpeg'
         return request.build_absolute_uri(photo_url) if request else photo_url
 
-class CommunitySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Community
-        fields = '__all__'
 
 class GroupSerializer(serializers.ModelSerializer):
+    admin = serializers.StringRelatedField(read_only=True)
+    members = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+
     class Meta:
         model = Group
         fields = '__all__'
+class GroupMembershipSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GroupMembership
+        fields = ['user', 'group', 'role', 'join_date']

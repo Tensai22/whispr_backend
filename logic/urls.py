@@ -5,7 +5,7 @@ from django.conf.urls.static import static
 from .views import login_view, register_view, logout_view, profile_update_view, password_change_view, \
     password_reset_view, password_reset_confirm_view, profile_view, search_users, \
     send_message, get_messages, MyTokenObtainPairView, MyTokenRefreshView, \
-    GroupListView, GroupCreateView, GroupDetailView, GroupMembershipListView
+    GroupListView, GroupCreateView, GroupDetailView, GroupMembershipListView,
 
 urlpatterns = [
     # path('login/', login_view, name='login'),
@@ -24,10 +24,12 @@ urlpatterns = [
     path('register/', register_view, name='register'),
     path('send_message/', send_message, name='send_message'),
     path('get_messages/', get_messages, name='get_messages'),
-                  path('groups/', GroupListView.as_view(), name='group-list'),
-                  path('groups/create/', GroupCreateView.as_view(), name='group-create'),
-                  path('groups/<int:pk>/', GroupDetailView.as_view(), name='group-detail'),
-                  path('community-memberships/', CommunityMembershipListView.as_view(),
-                       name='community-memberships-list'),
-                  path('group-memberships/', GroupMembershipListView.as_view(), name='group-memberships-list'),
+
+
+    path('groups/', GroupListView.as_view(), name='group-list'),
+    path('groups/create/', GroupCreateView.as_view(), name='group-create'),
+    path('groups/<int:pk>/', GroupDetailView.as_view(), name='group-detail'),
+    path('group-memberships/', GroupMembershipListView.as_view(), name='group-memberships-list'),
+
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
