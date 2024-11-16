@@ -19,7 +19,23 @@ class Profile(models.Model):
             return True
         return False
 
+class Community(models.Model):
+    name = models.CharField(max_length=255, unique=True, verbose_name='Название')
+    description = models.TextField(blank=True, verbose_name='Описание')
+    admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_communities', verbose_name='Администратор')
+    members = models.ManyToManyField(User, through='CommunityMembership', related_name='communities', verbose_name='Участники')
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
+    def __str__(self):
+        return self.name
+
+class CommunityMembership(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    community = models.ForeignKey(Community, on_delete=models.CASCADE)
+    ole = models.CharField(max_length=50,
+                           choices=[('member', 'Участник'), ('moderator', 'Модератор'), ('admin', 'Администратор')],
+                           default='member', verbose_name='Роль')
+    join_date = models.DateTimeField(auto_now_add=True)
 
 class Group(models.Model):  # Группа
     name = models.CharField(max_length=255, unique=True, verbose_name='Название')
