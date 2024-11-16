@@ -21,8 +21,8 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, Toke
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
-from .models import Profile, ChatMessage, Group, GroupMembership
-from .serializers import UserSerializer, ChatMessageSerializer, GroupSerializer, Grou
+from .models import Profile, ChatMessage, Group, GroupMembership, Community, CommunityMembership
+from .serializers import UserSerializer, ChatMessageSerializer, GroupSerializer, GroupMembershipSerializer, CommunitySerializer, CommunityMembershipSerializer
 from django.core import serializers
 
 
@@ -291,4 +291,28 @@ class GroupDetailView(RetrieveUpdateDestroyAPIView):
 class GroupMembershipListView(ListAPIView):
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CommunityListView(ListAPIView):
+    queryset = Community.objects.all()
+    serializer_class = CommunitySerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CommunityCreateView(ListCreateAPIView):
+    queryset = Community.objects.all()
+    serializer_class = CommunitySerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CommunityDetailView(RetrieveUpdateDestroyAPIView):
+    queryset = Community.objects.all()
+    serializer_class = CommunitySerializer
+    permission_classes = [IsAuthenticated]
+
+
+class CommunityMembershipListView(ListAPIView):
+    queryset = CommunityMembership.objects.all()
+    serializer_class = CommunityMembershipSerializer
     permission_classes = [IsAuthenticated]
