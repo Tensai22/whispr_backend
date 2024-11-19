@@ -57,8 +57,8 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
         fields = ['user', 'group', 'role', 'join_date']
 
 class CommunitySerializer(serializers.ModelSerializer):
-    admin = serializers.StringRelatedField(read_only=True)  # Выводим имя администратора
-    members = serializers.PrimaryKeyRelatedField(many=True, read_only=True) # Или StringRelatedField если нужно выводить имена пользователей
+    admin = serializers.StringRelatedField(read_only=True)
+    members = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
 
     class Meta:
         model = Community
