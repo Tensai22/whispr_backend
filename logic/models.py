@@ -37,11 +37,11 @@ class CommunityMembership(models.Model):
                            default='member', verbose_name='Роль')
     join_date = models.DateTimeField(auto_now_add=True)
 
-class Group(models.Model):  # Группа
+class Group(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
     admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_groups', verbose_name='Администратор')
-    members = models.ManyToManyField(User, through='GroupMembership', related_name='groups', verbose_name='Участники')
+    members = models.ManyToManyField(User, through='GroupMembership', related_name='users_groups', verbose_name='Участники')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
 
     def __str__(self):
