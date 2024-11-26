@@ -17,7 +17,8 @@ urlpatterns = [
     path('password_reset_confirm/<uidb64>/<token>/', password_reset_confirm_view, name='password_reset_confirm'),
 
     path('search_users/', search_users, name='search_users'),
-
+    path('register/', register_view, name='register'),
     path('login/', MyTokenObtainPairView.as_view(), name='token_obtain_pair'),
     path('token/refresh/', MyTokenRefreshView.as_view(), name='token_refresh'),
+
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

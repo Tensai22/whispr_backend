@@ -10,7 +10,6 @@ urlpatterns = [
     path('', views.index, name='index'),  # Страница списка комнат или чата
     path('get_messages/', views.GetMessagesView.as_view(), name='get_messages'),
     path('send_message/', send_message, name='send_message'),
-    path('get_messages/', get_messages, name='get_messages'),
 
     path('communities/', CommunityListView.as_view(), name='community-list'),
     path('communities/create/', CommunityCreateView.as_view(), name='community-create'),
