@@ -6,10 +6,10 @@ from .models import Message
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_name = self.scope['url_route']['kwargs']['room_name']
-        self.room_group_name = f'chat_{self.room_name}'
+        # Используем глобальный канал
+        self.room_group_name = 'chat_global'
 
-        # Join room group
+        # Присоединение к группе
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -17,7 +17,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         await self.accept()
 
     async def disconnect(self, close_code):
-        # Leave room group
+        # Удаление из группы
         await self.channel_layer.group_discard(
             self.room_group_name,
             self.channel_name
@@ -27,13 +27,12 @@ class ChatConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         message = data['message']
 
-        # Save message to database
+        # Сохранение сообщения в базе данных
         await sync_to_async(Message.objects.create)(
-            room_name=self.room_name,
             message=message
         )
 
-        # Send message to room group
+        # Отправка сообщения в группу
         await self.channel_layer.group_send(
             self.room_group_name,
             {
@@ -45,7 +44,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
     async def chat_message(self, event):
         message = event['message']
 
-        # Send message to WebSocket
+        # Отправка сообщения всем подключенным клиентам
         await self.send(text_data=json.dumps({
             'message': message
         }))
