@@ -27,6 +27,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
         data = json.loads(text_data)
         message = data['message']
 
+        self.send(text_data=json.dumps({
+            'message': message
+        }))
+
         # Сохранение сообщения в базе данных
         await sync_to_async(Message.objects.create)(
             message=message
