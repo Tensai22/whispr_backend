@@ -5,9 +5,10 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
-
+from rest_framework.decorators import api_view  #  Добавьте этот импорт
+from rest_framework.response import Response
 from .models import Message, ChatMessage, Group, GroupMembership, Chat, CommunityMembership, Community
-from .serializers import ChatMessageSerializer, CommunitySerializer, CommunityMembershipSerializer, GroupSerializer, GroupMembershipSerializer
+from .serializers import ChatMessageSerializer, CommunitySerializer, CommunityMembershipSerializer, GroupSerializer, GroupMembershipSerializer, MessageSerializer
 
 
 def index(request):
@@ -38,18 +39,17 @@ from .models import Message
 class GetMessagesView(APIView):
     def get(self, request):
         messages = Message.objects.all().order_by('-timestamp')
+        serializer = MessageSerializer(messages, many=True)
         data = [{'id': msg.id, 'text': msg.message, 'timestamp': msg.timestamp} for msg in messages]
         return Response({'messages': data})
 
 @csrf_exempt
 @require_GET
-def get_messages(request):
-    try:
-        messages = ChatMessage.objects.all().order_by('-timestamp')
-        serializer = ChatMessageSerializer(messages, many=True, context={'request': request})
-        return JsonResponse({'messages': serializer.data}, status=200)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+@api_view(['GET'])
+def get_messages(request): #  Убираем room_name из параметров
+    messages = Message.objects.all().order_by('timestamp')
+    serializer = MessageSerializer(messages, many=True)
+    return Response(serializer.data)
 
 
 @csrf_exempt
