@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ChatMessage, Group, GroupMembership, Community, CommunityMembership
+from .models import ChatMessage, Group, GroupMembership, Community, CommunityMembership, Message
 
 class ChatMessageSerializer(serializers.ModelSerializer):
     sender = serializers.CharField(source='sender.username', read_only=True)
@@ -41,4 +41,9 @@ class CommunityMembershipSerializer(serializers.ModelSerializer):
         model = CommunityMembership
         fields = ['user', 'community', 'join_date']
 
+
+class MessageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Message
+        fields = '__all__'
 

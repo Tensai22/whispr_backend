@@ -8,7 +8,7 @@ from chat.views import send_message, get_messages, CommunityListView, CommunityC
 
 urlpatterns = [
     path('', views.index, name='index'),  # Страница списка комнат или чата
-    path('get_messages/', views.GetMessagesView.as_view(), name='get_messages'),
+    path('get_messages/', views.get_messages, name='get_messages'),
     path('send_message/', send_message, name='send_message'),
 
     path('communities/', CommunityListView.as_view(), name='community-list'),
