@@ -20,3 +20,4 @@ urlpatterns = [
     path('community-memberships/', CommunityMembershipListView.as_view(), name='community-memberships-list'),
     path('group-memberships/', GroupMembershipListView.as_view(), name='group-memberships-list'),
 ]
+'''WebSocket'''
