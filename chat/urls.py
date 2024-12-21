@@ -6,7 +6,53 @@ from chat import views
 from chat.views import CommunityListView, CommunityCreateView, CommunityDetailView, \
     GroupListView, GroupCreateView, GroupDetailView, CommunityMembershipListView, GroupMembershipListView, MessageListView
 
+
+from django.urls import path
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import PrivateChatMessage, PrivateChat
+from .serializers import PrivateChatMessageSerializer
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_user_messages(request, user_id):
+    try:
+        chat = PrivateChat.objects.filter(participants=request.user).filter(participants__id=user_id).first()
+        if not chat:
+            return Response({"detail": "Chat not found."}, status=404)
+
+        messages = PrivateChatMessage.objects.filter(chat=chat).order_by('timestamp')
+        serializer = PrivateChatMessageSerializer(messages, many=True)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=500)
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def send_message(request, user_id):
+    try:
+        chat, created = PrivateChat.objects.get_or_create(
+            participants=request.user,
+            defaults={"participants": [request.user, user_id]}
+        )
+        message = PrivateChatMessage.objects.create(
+            sender=request.user,
+            chat=chat,
+            text=request.data.get('text')
+        )
+        serializer = PrivateChatMessageSerializer(message)
+        return Response(serializer.data)
+    except Exception as e:
+        return Response({"detail": str(e)}, status=500)
+
+
+
 urlpatterns = [
+
+    path('messages/<int:user_id>/', get_user_messages, name='get_user_messages'),
+    path('messages/<int:user_id>/send/', send_message, name='send_message'),
+
     path('', views.index, name='index'),  # Страница списка комнат или чата
     path('messages/', views.MessageListView.as_view(), name='message-list'),
 
