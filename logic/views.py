@@ -238,3 +238,17 @@ def search_users(request):
         return JsonResponse(users_list, safe=False)
     return JsonResponse([], safe=False)
 
+class UserProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            profile = Profile.objects.get(user=request.user)
+            user_data = {
+                'username': request.user.username,
+                'avatar_url': profile.photo.url if profile.photo else None,
+                'birth_date': profile.birth_date,
+            }
+            return Response(user_data)
+        except Profile.DoesNotExist:
+            return Response({'username': request.user.username, 'avatar_url': None, 'birth_date': None})

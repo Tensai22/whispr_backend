@@ -3,12 +3,14 @@ from django.http import JsonResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
 from rest_framework.permissions import IsAuthenticated
-from rest_framework.decorators import api_view  #  Добавьте этот импорт
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Message, ChatMessage, Group, GroupMembership, Chat, CommunityMembership, Community
-from .serializers import ChatMessageSerializer, CommunitySerializer, CommunityMembershipSerializer, GroupSerializer, GroupMembershipSerializer, MessageSerializer
+from .models import Message, Group, GroupMembership, Chat, CommunityMembership, Community, PrivateChat, \
+    PrivateChatMessage
+from .serializers import CommunitySerializer, CommunityMembershipSerializer, GroupSerializer, \
+    GroupMembershipSerializer, MessageSerializer, PrivateChatSerializer, PrivateChatMessageSerializer
 
 
 def index(request):
@@ -30,43 +32,9 @@ def room(request, room_name):
         'messages': messages
     })
 
-
-# views.py
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from .models import Message
-
-class GetMessagesView(APIView):
-    def get(self, request):
-        messages = Message.objects.all().order_by('-timestamp')
-        serializer = MessageSerializer(messages, many=True)
-        data = [{'id': msg.id, 'text': msg.message, 'timestamp': msg.timestamp} for msg in messages]
-        return Response({'messages': data})
-
-@csrf_exempt
-@require_GET
-@api_view(['GET'])
-def get_messages(request): #  Убираем room_name из параметров
-    messages = Message.objects.all().order_by('timestamp')
-    serializer = MessageSerializer(messages, many=True)
-    return Response(serializer.data)
-
-
-@csrf_exempt
-@require_POST
-def send_message(request):
-    try:
-        data = json.loads(request.body)
-        text = data.get('text')
-        if not text:
-            return JsonResponse({'error': 'No message text provided'}, status=400)
-
-        message = ChatMessage.objects.create(sender=request.user, text=text)
-        message_data = {'id': message.id, 'sender': message.sender.username, 'text': message.text,
-                        'timestamp': message.timestamp}
-        return JsonResponse(message_data, status=201)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+class MessageListView(ListAPIView):
+    queryset = Message.objects.all().order_by('timestamp')
+    serializer_class = MessageSerializer
 
 class GroupListView(ListAPIView):
     queryset = Group.objects.all()
@@ -113,3 +81,42 @@ class CommunityMembershipListView(ListAPIView):
     queryset = CommunityMembership.objects.all()
     serializer_class = CommunityMembershipSerializer
     permission_classes = [IsAuthenticated]
+
+
+class PrivateChatListCreateView(ListCreateAPIView):
+    serializer_class = PrivateChatSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return self.request.user.private_chats.all()
+
+    def perform_create(self, serializer):
+        serializer.save(participants=[self.request.user] + list(serializer.validated_data['participants']))
+
+
+class PrivateChatDetailView(RetrieveAPIView):
+    serializer_class = PrivateChatSerializer
+    permission_classes = [IsAuthenticated]
+    lookup_field = 'pk'
+
+    def get_queryset(self):
+        return PrivateChat.objects.filter(participants=self.request.user)
+
+class PrivateChatMessageListCreateView(ListCreateAPIView):
+    serializer_class = PrivateChatMessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        chat_pk = self.kwargs['chat_pk']
+        try:
+            chat = PrivateChat.objects.get(pk=chat_pk, participants=self.request.user)
+        except PrivateChat.DoesNotExist:
+            self.queryset = PrivateChatMessage.objects.none()
+            return self.queryset
+        return chat.messages.all()
+
+
+    def perform_create(self, serializer):
+        chat_pk = self.kwargs['chat_pk']
+        chat = PrivateChat.objects.get(pk=chat_pk)
+        serializer.save(sender=self.request.user, chat=chat)

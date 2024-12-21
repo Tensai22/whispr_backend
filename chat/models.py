@@ -1,13 +1,12 @@
 from django.db import models
 from logic.models import User
 class Message(models.Model):
-    message = models.TextField()
-
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
+    content = models.TextField()
     timestamp = models.DateTimeField(auto_now_add=True)
-    username = models.CharField(max_length=255, default='anonymous')
 
     def __str__(self):
-        return f"{self.room_name}: {self.message}"
+        return f"{self.user.username}: {self.content[:50]}"
 
 class Community(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name='Название')
@@ -37,15 +36,6 @@ class Group(models.Model):
     def __str__(self):
         return self.name
 
-class ChatMessage(models.Model):
-    sender = models.ForeignKey(User, on_delete=models.CASCADE)
-    text = models.TextField()
-    timestamp = models.DateTimeField(auto_now_add=True)
-    chat = models.ForeignKey('Chat', on_delete=models.CASCADE, related_name='messages')
-
-    def __str__(self):
-        return f"{self.sender.username}: {self.text[:20]} - {self.timestamp}"
-
 class GroupMembership(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     group = models.ForeignKey(Group, on_delete=models.CASCADE)
@@ -60,4 +50,20 @@ class Chat(models.Model):
 
     def __str__(self):
         return self.name
+
+class PrivateChat(models.Model):
+    participants = models.ManyToManyField(User, related_name='private_chats')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Private Chat between {', '.join(p.username for p in self.participants.all())}"
+
+class PrivateChatMessage(models.Model):
+    sender = models.ForeignKey(User, on_delete=models.CASCADE)
+    chat = models.ForeignKey(PrivateChat, on_delete=models.CASCADE, related_name='messages')
+    text = models.TextField()
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sender.username}: {self.text[:20]} - {self.timestamp}"
 

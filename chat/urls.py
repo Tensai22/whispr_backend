@@ -3,13 +3,12 @@ from django.conf import settings
 from django.conf.urls.static import static
 
 from chat import views
-from chat.views import send_message, get_messages, CommunityListView, CommunityCreateView, CommunityDetailView, \
-    GroupListView, GroupCreateView, GroupDetailView, CommunityMembershipListView, GroupMembershipListView
+from chat.views import CommunityListView, CommunityCreateView, CommunityDetailView, \
+    GroupListView, GroupCreateView, GroupDetailView, CommunityMembershipListView, GroupMembershipListView, MessageListView
 
 urlpatterns = [
     path('', views.index, name='index'),  # Страница списка комнат или чата
-    path('get_messages/', views.get_messages, name='get_messages'),
-    path('send_message/', send_message, name='send_message'),
+    path('messages/', views.MessageListView.as_view(), name='message-list'),
 
     path('communities/', CommunityListView.as_view(), name='community-list'),
     path('communities/create/', CommunityCreateView.as_view(), name='community-create'),
@@ -19,5 +18,7 @@ urlpatterns = [
     path('groups/<int:pk>/', GroupDetailView.as_view(), name='group-detail'),
     path('community-memberships/', CommunityMembershipListView.as_view(), name='community-memberships-list'),
     path('group-memberships/', GroupMembershipListView.as_view(), name='group-memberships-list'),
+    path('private-chats/', views.PrivateChatListCreateView.as_view(), name='private-chat-list-create'),
+    path('private-chats/<int:pk>/', views.PrivateChatDetailView.as_view(), name='private-chat-detail'),
+    path('private-chats/<int:chat_pk>/messages/', views.PrivateChatMessageListCreateView.as_view(), name='private-chat-message-list-create'),
 ]
-'''WebSocket'''

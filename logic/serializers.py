@@ -8,11 +8,18 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
-    profile = ProfileSerializer()
+    avatar_url = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = '__all__'
+        fields = ['id', 'username', 'avatar_url']  # Добавьте avatar_url
+
+    def get_avatar_url(self, obj):
+        try:
+            profile = Profile.objects.get(user=obj)
+            return profile.photo.url
+        except Profile.DoesNotExist:
+            return None # Или URL стандартной аватарки
 
     def update(self, instance, validated_data, profile=None):
         profile_data = validated_data.pop(profile, {})

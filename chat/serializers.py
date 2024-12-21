@@ -1,19 +1,8 @@
 from rest_framework import serializers
-from .models import ChatMessage, Group, GroupMembership, Community, CommunityMembership, Message
 
-class ChatMessageSerializer(serializers.ModelSerializer):
-    sender = serializers.CharField(source='sender.username', read_only=True)
-    sender_photo = serializers.SerializerMethodField()
-
-    class Meta:
-        model = ChatMessage
-        fields = ['id', 'sender', 'sender_photo', 'text', 'timestamp']
-
-    def get_sender_photo(self, obj):
-        request = self.context.get('request')
-        photo_url = obj.sender.profile.photo.url if obj.sender.profile.photo else '/media/profile_photos/default_profile_image.jpeg'
-        return request.build_absolute_uri(photo_url) if request else photo_url
-
+from logic.serializers import UserSerializer
+from .models import Group, GroupMembership, Community, CommunityMembership, Message, PrivateChatMessage, PrivateChat
+from logic.models import User, Profile
 
 class GroupSerializer(serializers.ModelSerializer):
     admin = serializers.StringRelatedField(read_only=True)
@@ -42,8 +31,40 @@ class CommunityMembershipSerializer(serializers.ModelSerializer):
         fields = ['user', 'community', 'join_date']
 
 
+class MessageUserSerializer(serializers.ModelSerializer):
+    avatar_url = serializers.SerializerMethodField()
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'avatar_url']
+
+    def get_avatar_url(self, obj):
+        try:
+            profile = Profile.objects.get(user=obj)
+            return profile.photo.url
+        except Profile.DoesNotExist:
+            return None # Или URL стандартной аватарки
+
 class MessageSerializer(serializers.ModelSerializer):
+    user = MessageUserSerializer(read_only=True) # Используйте MessageUserSerializer
+
     class Meta:
         model = Message
-        fields = '__all__'
+        fields = ['id', 'user', 'content', 'timestamp']
+
+class PrivateChatSerializer(serializers.ModelSerializer):
+    participants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all())
+
+    class Meta:
+        model = PrivateChat
+        fields = ['id', 'participants', 'created_at', 'messages']
+        read_only_fields = ['created_at']
+
+
+class PrivateChatMessageSerializer(serializers.ModelSerializer):
+    sender = serializers.CharField(source='sender.name', read_only=True)
+
+    class Meta:
+        model = PrivateChatMessage
+        fields = ['id', 'sender', 'text', 'timestamp']
 
