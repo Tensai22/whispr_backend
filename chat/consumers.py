@@ -11,59 +11,68 @@ from urllib.parse import parse_qs
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        self.room_group_name = 'global_chat'
-        await self.channel_layer.group_add(
-            self.room_group_name,
-            self.channel_name
-        )
-        await self.accept()
+        self.user = await self.get_user_from_token()
+        self.room_group_name = None  # Инициализируем room_group_name
+
+        if self.user.is_authenticated:
+            # Вместо глобальной группы, пользователь будет вступать в приватные чаты
+            await self.accept()
+        else:
+            await self.close(code=4001)
 
     async def disconnect(self, close_code):
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        if self.room_group_name:
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_content = data.get('message', '')
         chat_id = data.get('chatId')
-        user = await self.get_user_from_token()
 
-        if user.is_authenticated:
-            chat = await sync_to_async(PrivateChat.objects.get)(id=chat_id, participants__in=[user])
-            message = await sync_to_async(PrivateChatMessage.objects.create)(
-                 sender=user,
-                 chat=chat,
-                 text=message_content
-            )
-
+        if self.user.is_authenticated:
             try:
-                profile = await sync_to_async(Profile.objects.get)(user=user)
-                avatar_url = profile.photo.url
-            except Profile.DoesNotExist:
-                avatar_url = None
+                chat = await sync_to_async(PrivateChat.objects.get)(id=chat_id, participants__in=[self.user])
+                self.room_group_name = f"chat_{chat.id}"
 
-            # Вывод в консоль отправленных сообщений
-            print(f"Сообщение от пользователя {user.username} (ID: {user.id}): {message_content} в чате {chat_id}")
+                # Больше не проверяем каналы, просто добавляем
+                await self.channel_layer.group_add(self.room_group_name, self.channel_name)
 
+                message = await sync_to_async(PrivateChatMessage.objects.create)(
+                    sender=self.user,
+                    chat=chat,
+                    text=message_content
+                )
 
-            await self.channel_layer.group_send(
-                self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': {
-                        'id': message.id,
-                        'user': {
-                            'id': user.id,
-                            'username': user.username,
-                            'avatar_url': avatar_url,
-                        },
-                        'content': message.text,
-                        'timestamp': message.timestamp.isoformat()
+                try:
+                    profile = await sync_to_async(Profile.objects.get)(user=self.user)
+                    avatar_url = profile.photo.url
+                except Profile.DoesNotExist:
+                    avatar_url = None
+
+                print(
+                    f"Сообщение от пользователя {self.user.username} (ID: {self.user.id}): {message_content} в чате {chat_id}")
+
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': {
+                            'id': message.id,
+                            'user': {
+                                'id': self.user.id,
+                                'username': self.user.username,
+                                'avatar_url': avatar_url,
+                            },
+                            'content': message.text,
+                            'timestamp': message.timestamp.isoformat()
+                        }
                     }
-                }
-            )
+                )
+            except PrivateChat.DoesNotExist:
+                print(f"Chat with id {chat_id} not found or user is not a participant")
         else:
             print('User is not authenticated, message not sent.')
 

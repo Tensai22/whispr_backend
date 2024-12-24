@@ -168,8 +168,10 @@ def search_users(request):
     query = request.GET.get('q', '')
     if query:
         users = User.objects.filter(username__icontains=query)
+        current_user = request.user
         users_json = serializers.serialize('json', users, fields=('id', 'username'))
         users_data = json.loads(users_json)
+        users_data = users_data.exclude(id=current_user.id)
         users_list = [{"id": user['pk'], "username": user['fields']['username']} for user in users_data]
         return JsonResponse(users_list, safe=False)
     return JsonResponse([], safe=False)
