@@ -53,17 +53,33 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class PrivateChatSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all())
+    messages = serializers.SerializerMethodField()
 
     class Meta:
         model = PrivateChat
         fields = ['id', 'participants', 'created_at', 'messages']
         read_only_fields = ['created_at']
 
+    def get_messages(self, obj):
+          messages = obj.messages.all().order_by('timestamp')
+          return PrivateChatMessageSerializer(messages, many=True).data
 
 class PrivateChatMessageSerializer(serializers.ModelSerializer):
-    sender = serializers.CharField(source='sender.name', read_only=True)
+    user = serializers.SerializerMethodField()
+    content = serializers.CharField(source='text')
 
     class Meta:
         model = PrivateChatMessage
-        fields = ['id', 'sender', 'text', 'timestamp']
+        fields = ['id', 'user', 'content', 'timestamp']
 
+    def get_user(self, obj):
+        try:
+            profile = Profile.objects.get(user=obj.sender)
+            avatar_url = profile.photo.url
+        except Profile.DoesNotExist:
+            avatar_url = None
+        return {
+            'id': obj.sender.id,
+            'username': obj.sender.username,
+            'avatar_url': avatar_url,
+        }

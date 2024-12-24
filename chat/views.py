@@ -5,10 +5,12 @@ from rest_framework import generics
 
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
-from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
+from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView, \
+    CreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rest_framework import status
 from .models import Message, Group, GroupMembership, Chat, CommunityMembership, Community, PrivateChat, \
     PrivateChatMessage
 from .serializers import CommunitySerializer, CommunityMembershipSerializer, GroupSerializer, \
@@ -100,7 +102,10 @@ class PrivateChatListCreateView(ListCreateAPIView):
         return self.request.user.private_chats.all()
 
     def perform_create(self, serializer):
-        serializer.save(participants=[self.request.user] + list(serializer.validated_data['participants']))
+        participants = serializer.validated_data.get('participants', [])
+        if self.request.user not in participants:
+            participants.append(self.request.user)
+        serializer.save(participants=participants)
 
 
 class PrivateChatDetailView(RetrieveAPIView):
@@ -111,23 +116,31 @@ class PrivateChatDetailView(RetrieveAPIView):
     def get_queryset(self):
         return PrivateChat.objects.filter(participants=self.request.user)
 
-class PrivateChatMessageListCreateView(ListCreateAPIView):
+
+class PrivateChatMessagesView(ListCreateAPIView):
     serializer_class = PrivateChatMessageSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        chat_pk = self.kwargs['chat_pk']
+        chat_pk = self.kwargs['pk']
         try:
             chat = PrivateChat.objects.get(pk=chat_pk, participants=self.request.user)
         except PrivateChat.DoesNotExist:
-            self.queryset = PrivateChatMessage.objects.none()
-            return self.queryset
-        return chat.messages.all()
+            return PrivateChatMessage.objects.none()
 
+        messages = chat.messages.all().order_by('timestamp')
+        return messages
 
     def perform_create(self, serializer):
-        chat_pk = self.kwargs['chat_pk']
-        chat = PrivateChat.objects.get(pk=chat_pk)
+        chat_pk = self.kwargs['pk']
+        try:
+            chat = PrivateChat.objects.get(pk=chat_pk, participants__in=[self.request.user])
+        except PrivateChat.DoesNotExist:
+            participants = [self.request.user] + serializer.validated_data.get('participants', [])
+
+            chat = PrivateChat.objects.create(
+                participants=participants
+            )
         serializer.save(sender=self.request.user, chat=chat)
 
 class UserCommunitiesListView(generics.ListAPIView):

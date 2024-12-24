@@ -37,6 +37,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
                  chat=chat,
                  text=message_content
             )
+
             try:
                 profile = await sync_to_async(Profile.objects.get)(user=user)
                 avatar_url = profile.photo.url
