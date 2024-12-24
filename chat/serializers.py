@@ -1,5 +1,4 @@
 from rest_framework import serializers
-
 from logic.serializers import UserSerializer
 from .models import Group, GroupMembership, Community, CommunityMembership, Message, PrivateChatMessage, PrivateChat
 from logic.models import User, Profile
@@ -11,6 +10,7 @@ class GroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = Group
         fields = '__all__'
+
 class GroupMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = GroupMembership
@@ -24,12 +24,10 @@ class CommunitySerializer(serializers.ModelSerializer):
         model = Community
         fields = '__all__'
 
-
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityMembership
         fields = ['user', 'community', 'join_date']
-
 
 class MessageUserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
@@ -44,6 +42,7 @@ class MessageUserSerializer(serializers.ModelSerializer):
             return profile.photo.url
         except Profile.DoesNotExist:
             return None
+
 class MessageSerializer(serializers.ModelSerializer):
     user = MessageUserSerializer(read_only=True)
 
@@ -53,17 +52,21 @@ class MessageSerializer(serializers.ModelSerializer):
 
 class PrivateChatSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all())
+    messages = serializers.SerializerMethodField()
 
     class Meta:
         model = PrivateChat
         fields = ['id', 'participants', 'created_at', 'messages']
         read_only_fields = ['created_at']
 
+    def get_messages(self, obj):
+          messages = obj.messages.all().order_by('timestamp')
+          return PrivateChatMessageSerializer(messages, many=True).data
+
 
 class PrivateChatMessageSerializer(serializers.ModelSerializer):
-    sender = serializers.CharField(source='sender.name', read_only=True)
+    sender_username = serializers.CharField(source='sender.username', read_only=True)
 
     class Meta:
         model = PrivateChatMessage
-        fields = ['id', 'sender', 'text', 'timestamp']
-
+        fields = ['id', 'sender_username', 'text', 'timestamp']
