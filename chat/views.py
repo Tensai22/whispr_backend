@@ -2,6 +2,7 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import render
 from rest_framework import generics
+
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView

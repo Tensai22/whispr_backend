@@ -22,4 +22,5 @@ urlpatterns = [
     path('private-chats/<int:pk>/', views.PrivateChatDetailView.as_view(), name='private-chat-detail'),
     path('private-chats/<int:chat_pk>/messages/', views.PrivateChatMessageListCreateView.as_view(), name='private-chat-message-list-create'),
     path('user_communities/', views.UserCommunitiesListView.as_view(), name='user-communities-list'),
+
 ]

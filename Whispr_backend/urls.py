@@ -9,6 +9,7 @@ urlpatterns = [
     path('api-auth/', include('rest_framework.urls')),
     path('chat/', include('chat.urls')),
     path('api/', include('chat.urls')),# Подключение приложения chat
+
 ]
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

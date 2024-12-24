@@ -67,3 +67,4 @@ class PrivateChatMessage(models.Model):
     def __str__(self):
         return f"{self.sender.username}: {self.text[:20]} - {self.timestamp}"
 
+
