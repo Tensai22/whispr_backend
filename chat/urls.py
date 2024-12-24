@@ -2,8 +2,9 @@ from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
 from chat.views import CommunityListView, CommunityCreateView, CommunityDetailView, \
-    GroupListView, GroupCreateView, GroupDetailView, CommunityMembershipListView, GroupMembershipListView, MessageListView, \
-    PrivateChatListCreateView, PrivateChatDetailView, PrivateChatMessagesView
+    GroupListView, GroupCreateView, GroupDetailView, CommunityMembershipListView, GroupMembershipListView, \
+    MessageListView, \
+    PrivateChatListCreateView, PrivateChatDetailView, PrivateChatMessagesView, UserCommunitiesListView
 
 urlpatterns = [
     path('messages/', MessageListView.as_view(), name='message-list'),
@@ -20,5 +21,5 @@ urlpatterns = [
     path('private-chats/', PrivateChatListCreateView.as_view(), name='private-chat-list-create'),
     path('private-chats/<int:pk>/', PrivateChatDetailView.as_view(), name='private-chat-detail'),
     path('private-chats/<int:pk>/messages/', PrivateChatMessagesView.as_view(), name='private-chat-messages'),
-
+    path('user_communities/', UserCommunitiesListView.as_view(), name='user-communities-list'),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
