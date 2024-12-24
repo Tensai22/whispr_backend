@@ -2,6 +2,7 @@ from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
+from .models import Profile
 from .serializers import UserSerializer, UserProfileSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
@@ -11,7 +12,6 @@ from django.contrib.auth import logout
 from django.http import JsonResponse
 import json
 from django.conf import settings
-from django.contrib.auth import authenticate, login
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
 from django.core.mail import send_mail

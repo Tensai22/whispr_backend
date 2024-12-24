@@ -43,6 +43,10 @@ class ChatConsumer(AsyncWebsocketConsumer):
             except Profile.DoesNotExist:
                 avatar_url = None
 
+            # Вывод в консоль отправленных сообщений
+            print(f"Сообщение от пользователя {user.username} (ID: {user.id}): {message_content} в чате {chat_id}")
+
+
             await self.channel_layer.group_send(
                 self.room_group_name,
                 {

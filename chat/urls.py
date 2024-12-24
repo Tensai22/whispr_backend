@@ -1,13 +1,12 @@
 from django.urls import path
 from django.conf import settings
 from django.conf.urls.static import static
-from chat import views
 from chat.views import CommunityListView, CommunityCreateView, CommunityDetailView, \
     GroupListView, GroupCreateView, GroupDetailView, CommunityMembershipListView, GroupMembershipListView, MessageListView, \
     PrivateChatListCreateView, PrivateChatDetailView, PrivateChatMessagesView
 
 urlpatterns = [
-    path('messages/', views.MessageListView.as_view(), name='message-list'),
+    path('messages/', MessageListView.as_view(), name='message-list'),
 
     path('communities/', CommunityListView.as_view(), name='community-list'),
     path('communities/create/', CommunityCreateView.as_view(), name='community-create'),
