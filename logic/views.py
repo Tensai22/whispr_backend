@@ -1,30 +1,32 @@
+from rest_framework.generics import RetrieveUpdateAPIView
+from rest_framework.views import APIView
+from rest_framework import status
+from rest_framework.response import Response
+from .models import Profile
+from .serializers import UserSerializer, UserProfileSerializer
+from rest_framework.permissions import AllowAny, IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.tokens import RefreshToken
+from django.contrib.auth import logout
+from django.http import JsonResponse
 import json
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib.auth.models import User
-from django.contrib.auth.decorators import login_required
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from django.http import JsonResponse
 from django.template.loader import render_to_string
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST, require_GET
-from rest_framework import status
-from rest_framework.generics import RetrieveUpdateAPIView, ListCreateAPIView, RetrieveUpdateDestroyAPIView, ListAPIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-from rest_framework.views import APIView
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenRefreshSerializer
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-
-from .models import Profile
-from .serializers import UserSerializer
 from django.core import serializers
-
+class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = self.user
+        data['username'] = user.username
+        return data
 
 
 def get_tokens_for_user(user):
@@ -34,136 +36,70 @@ def get_tokens_for_user(user):
         'access': str(refresh.access_token),
     }
 
+class LoginView(APIView):
+    permission_classes = [AllowAny]
+    serializer_class = CustomTokenObtainPairSerializer
 
-class MyTokenObtainPairView(TokenObtainPairView):
-    serializer_class = TokenObtainPairSerializer
-
-    def post(self, request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == status.HTTP_200_OK:
-            request.session['token'] = response.data['access']
-            request.session['refresh_token'] = response.data['refresh']
-        return response
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        return Response(serializer.validated_data, status=status.HTTP_200_OK)
 
 
-class MyTokenRefreshView(TokenRefreshView):
-    serializer_class = TokenRefreshSerializer
+class RegistrationView(APIView):
+    permission_classes = [AllowAny]
 
-    def post(self, request, *args, **kwargs):
-        # Восстанавливаем refresh token из сессии
-        if 'refresh_token' in request.session:
-            request.data['refresh'] = request.session['refresh_token']
-
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == status.HTTP_200_OK:
-            request.session['token'] = response.data['access']
-        return response
-
-
-@csrf_exempt
-@require_POST
-def login_view(request):
-    try:
-        data = json.loads(request.body)
-        username = data.get('username')
-        password = data.get('password')
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
+    def post(self, request):
+        serializer = UserSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
             tokens = get_tokens_for_user(user)
-            request.session['access_token'] = tokens['access']
-            request.session['refresh_token'] = tokens['refresh']
-            return JsonResponse(
-                {'message': 'Login successful', 'access': tokens['access'], 'refresh': tokens['refresh']}, status=200)
-        else:
-            return JsonResponse({'message': 'Invalid credentials'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
-
-
-@csrf_exempt
-@require_POST
-def register_view(request):
-    try:
-        data = json.loads(request.body)
-        username = data.get('username')
-        email = data.get('email')
-        password = data.get('password')
-        birth_date = data.get('birth_date', None)
-
-        if not username or not email or not password:
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
-
-        if User.objects.filter(username=username).exists():
-            return JsonResponse({'error': 'Username already exists'}, status=400)
-
-        if User.objects.filter(email=email).exists():
-            return JsonResponse({'error': 'Email already exists'}, status=400)
-
-        user = User.objects.create_user(username=username, email=email, password=password)
-        Profile.objects.create(user=user, birth_date=birth_date)
-
-        user = authenticate(request, username=username, password=password)
-        if user is not None:
-            login(request, user)
-            tokens = get_tokens_for_user(user)
-            request.session['access_token'] = tokens['access']
-            request.session['refresh_token'] = tokens['refresh']
-            return JsonResponse(
+            return Response(
                 {'message': 'User registered successfully', 'access': tokens['access'], 'refresh': tokens['refresh']},
-                status=200)
-        else:
-            return JsonResponse({'message': 'Registration failed, try logging in'}, status=400)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+                status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class profile_update_view(RetrieveUpdateAPIView):
+class ProfileUpdateView(RetrieveUpdateAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-
     def get_object(self):
         return self.request.user
 
 
-@csrf_exempt
-@require_POST
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def logout_view(request):
-    if request.method == 'POST':
-        logout(request)
-        return JsonResponse({'message': 'Logout successful'}, status=200)
-    return JsonResponse({'message': 'Method not allowed'}, status=405)
+    logout(request)
+    return JsonResponse({'message': 'Logout successful'}, status=200)
 
 
-@csrf_exempt
-@login_required
-@require_POST
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
 def password_change_view(request):
-    if request.method == 'POST':
-        data = json.loads(request.body)
-        old_password = data.get('old_password')
-        new_password = data.get('new_password')
-        confirm_new_password = data.get('confirm_new_password')
+    data = json.loads(request.body)
+    old_password = data.get('old_password')
+    new_password = data.get('new_password')
+    confirm_new_password = data.get('confirm_new_password')
 
-        if not old_password or not new_password or not confirm_new_password:
-            return JsonResponse({'error': 'Missing required fields'}, status=400)
+    if not old_password or not new_password or not confirm_new_password:
+        return JsonResponse({'error': 'Missing required fields'}, status=400)
 
-        if new_password != confirm_new_password:
-            return JsonResponse({'error': 'New passwords do not match'}, status=400)
+    if new_password != confirm_new_password:
+        return JsonResponse({'error': 'New passwords do not match'}, status=400)
 
-        user = request.user
-        if not user.check_password(old_password):
-            return JsonResponse({'error': 'Old password is incorrect'}, status=400)
+    user = request.user
+    if not user.check_password(old_password):
+         return JsonResponse({'error': 'Old password is incorrect'}, status=400)
 
-        user.set_password(new_password)
-        user.save()
-        return JsonResponse({'message': 'Password change confirmed'}, status=200)
-
-    return JsonResponse({'message': 'Method not allowed'}, status=405)
+    user.set_password(new_password)
+    user.save()
+    return JsonResponse({'message': 'Password change confirmed'}, status=200)
 
 
-@csrf_exempt
-@require_POST
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def password_reset_view(request):
     data = json.loads(request.body)
     email = data.get('email')
@@ -188,8 +124,8 @@ def password_reset_view(request):
     return JsonResponse({'message': 'Password reset link has been sent to your email'}, status=200)
 
 
-@csrf_exempt
-@require_POST
+@api_view(['POST'])
+@permission_classes([AllowAny])
 def password_reset_confirm_view(request, uidb64, token):
     data = json.loads(request.body)
     new_password = data.get('new_password')
@@ -242,13 +178,6 @@ class UserProfileView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        try:
-            profile = Profile.objects.get(user=request.user)
-            user_data = {
-                'username': request.user.username,
-                'avatar_url': profile.photo.url if profile.photo else None,
-                'birth_date': profile.birth_date,
-            }
-            return Response(user_data)
-        except Profile.DoesNotExist:
-            return Response({'username': request.user.username, 'avatar_url': None, 'birth_date': None})
+        user = request.user
+        serializer = UserProfileSerializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
