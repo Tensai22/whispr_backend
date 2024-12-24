@@ -1,5 +1,6 @@
 from rest_framework import serializers
 
+
 from logic.serializers import UserSerializer
 from .models import Group, GroupMembership, Community, CommunityMembership, Message, PrivateChatMessage, PrivateChat
 from logic.models import User, Profile

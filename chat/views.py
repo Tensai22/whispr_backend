@@ -1,6 +1,7 @@
 import json
 from django.http import JsonResponse
 from django.shortcuts import render
+from rest_framework import generics
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_POST
 from rest_framework.generics import ListAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
@@ -63,13 +64,20 @@ class CommunityListView(ListAPIView):
     queryset = Community.objects.all()
     serializer_class = CommunitySerializer
     permission_classes = [IsAuthenticated]
-
-
+'''
 class CommunityCreateView(ListCreateAPIView):
+    queryset = Community.objects.all()
+    serializer_class = CommunitySerializer
+    permission_classes = [IsAuthenticated]'''
+
+class CommunityCreateView(generics.CreateAPIView):
     queryset = Community.objects.all()
     serializer_class = CommunitySerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+        community = serializer.save(admin=self.request.user)
+        CommunityMembership.objects.create(user=self.request.user, community=community, ole='admin')
 
 class CommunityDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Community.objects.all()
@@ -120,3 +128,11 @@ class PrivateChatMessageListCreateView(ListCreateAPIView):
         chat_pk = self.kwargs['chat_pk']
         chat = PrivateChat.objects.get(pk=chat_pk)
         serializer.save(sender=self.request.user, chat=chat)
+
+class UserCommunitiesListView(generics.ListAPIView):
+    serializer_class = CommunitySerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Community.objects.filter(members=user)
