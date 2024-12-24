@@ -8,6 +8,11 @@ class ProfileSerializer(serializers.ModelSerializer):
         model = Profile
         fields = ['photo', 'birth_date']
 
+class AvatarUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ['photo']
+
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ProfileSerializer(required=False)

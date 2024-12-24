@@ -151,6 +151,22 @@ def password_reset_confirm_view(request, uidb64, token):
         return JsonResponse({'error': 'Invalid reset link'}, status=400)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_avatar(request):
+    user = request.user
+    profile = Profile.objects.get(user=user)
+
+    if 'avatar' in request.FILES:
+        profile.photo = request.FILES['avatar']
+        profile.save()
+
+        return Response({
+            'avatar_url': profile.photo.url
+        }, status=200)
+
+    return Response({'error': 'No avatar file provided'}, status=400)
+
 def profile_view(request, id):
     user = get_object_or_404(User, id=id)
     profile = get_object_or_404(Profile, user=user)
