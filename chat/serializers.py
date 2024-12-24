@@ -43,10 +43,9 @@ class MessageUserSerializer(serializers.ModelSerializer):
             profile = Profile.objects.get(user=obj)
             return profile.photo.url
         except Profile.DoesNotExist:
-            return None # Или URL стандартной аватарки
-
+            return None
 class MessageSerializer(serializers.ModelSerializer):
-    user = MessageUserSerializer(read_only=True) # Используйте MessageUserSerializer
+    user = MessageUserSerializer(read_only=True)
 
     class Meta:
         model = Message

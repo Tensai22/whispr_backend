@@ -12,7 +12,6 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from datetime import timedelta
 from pathlib import Path
 import os
-
 from logic.middleware import SessionAuthenticationMiddleware
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -40,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',
+    'rest_framework_simplejwt',
     'corsheaders',
     'logic',
     'channels',
@@ -48,11 +48,11 @@ INSTALLED_APPS = [
     'channels_redis',
 ]
 
-# REST_FRAMEWORK = {
-#     'DEFAULT_AUTHENTICATION_CLASSES': (
-#         'rest_framework_simplejwt.authentication.JWTAuthentication',
-#     ),
-# }
+REST_FRAMEWORK = {
+     'DEFAULT_AUTHENTICATION_CLASSES': (
+         'rest_framework_simplejwt.authentication.JWTAuthentication',
+     ),
+ }
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
@@ -208,4 +208,4 @@ CHANNEL_LAYERS = {
 # пользователь и сможет общаться в чате.
 #LOGIN_REDIRECT_URL = "chat-page"
 '''LOGOUT_REDIRECT_URL = "login-user"'''
-LOGIN_URL = "login/"
+LOGIN_URL = "login"
