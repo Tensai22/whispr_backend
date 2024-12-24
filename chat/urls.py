@@ -11,7 +11,7 @@ urlpatterns = [
     path('messages/', views.MessageListView.as_view(), name='message-list'),
 
     path('communities/', CommunityListView.as_view(), name='community-list'),
-    path('communities/create/', CommunityCreateView.as_view(), name='community-create'),
+    path('communities/create/', views.CommunityCreateView.as_view(), name='community-create'),
     path('communities/<int:pk>/', CommunityDetailView.as_view(), name='community-detail'),
     path('groups/', GroupListView.as_view(), name='group-list'),
     path('groups/create/', GroupCreateView.as_view(), name='group-create'),
@@ -21,4 +21,5 @@ urlpatterns = [
     path('private-chats/', views.PrivateChatListCreateView.as_view(), name='private-chat-list-create'),
     path('private-chats/<int:pk>/', views.PrivateChatDetailView.as_view(), name='private-chat-detail'),
     path('private-chats/<int:chat_pk>/messages/', views.PrivateChatMessageListCreateView.as_view(), name='private-chat-message-list-create'),
-]
+    path('user_communities/', views.UserCommunitiesListView.as_view(), name='user-communities-list'),
+] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

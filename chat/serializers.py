@@ -46,10 +46,10 @@ class MessageUserSerializer(serializers.ModelSerializer):
             return None
 class MessageSerializer(serializers.ModelSerializer):
     user = MessageUserSerializer(read_only=True)
-
+    file = serializers.FileField(required=False)
     class Meta:
         model = Message
-        fields = ['id', 'user', 'content', 'timestamp']
+        fields = ['id', 'user', 'content', 'timestamp', 'file']
 
 class PrivateChatSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all())
