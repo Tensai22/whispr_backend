@@ -1,3 +1,4 @@
+from django.db.models import Q
 from rest_framework.generics import RetrieveUpdateAPIView
 from rest_framework.views import APIView
 from rest_framework import status
@@ -197,3 +198,23 @@ class UserProfileView(APIView):
         user = request.user
         serializer = UserProfileSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+@csrf_exempt
+def get_users_with_messages(request):
+    # Получаем текущего пользователя
+    user = request.user
+
+    # Ищем всех пользователей, с которыми был обмен сообщениями
+    users = User.objects.filter(
+        Q(sender=user) | Q(receiver=user)
+    ).distinct()
+
+    # Сериализация данных
+    users_json = serializers.serialize('json', users, fields=('id', 'username'))
+    users_data = json.loads(users_json)
+
+    # Формируем список пользователей
+    users_list = [{"id": user['pk'], "username": user['fields']['username']} for user in users_data]
+
+    return JsonResponse(users_list, safe=False)
