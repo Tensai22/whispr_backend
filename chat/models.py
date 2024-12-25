@@ -3,6 +3,7 @@ from logic.models import User
 class Message(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='messages')
     content = models.TextField()
+    file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -62,9 +63,8 @@ class PrivateChatMessage(models.Model):
     sender = models.ForeignKey(User, on_delete=models.CASCADE)
     chat = models.ForeignKey(PrivateChat, on_delete=models.CASCADE, related_name='messages')
     text = models.TextField()
+    file = models.FileField(upload_to='private_chat_files/', blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.sender.username}: {self.text[:20]} - {self.timestamp}"
-
-
