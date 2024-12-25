@@ -24,12 +24,10 @@ class CommunitySerializer(serializers.ModelSerializer):
         model = Community
         fields = '__all__'
 
-
 class CommunityMembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = CommunityMembership
         fields = ['user', 'community', 'join_date']
-
 
 class MessageUserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()
@@ -46,10 +44,10 @@ class MessageUserSerializer(serializers.ModelSerializer):
             return None
 class MessageSerializer(serializers.ModelSerializer):
     user = MessageUserSerializer(read_only=True)
-
+    file = serializers.FileField(required=False)
     class Meta:
         model = Message
-        fields = ['id', 'user', 'content', 'timestamp']
+        fields = ['id', 'user', 'content', 'timestamp', 'file']
 
 class PrivateChatSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all())
@@ -65,12 +63,13 @@ class PrivateChatSerializer(serializers.ModelSerializer):
           return PrivateChatMessageSerializer(messages, many=True).data
 
 class PrivateChatMessageSerializer(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField()
+    user = MessageUserSerializer(source='sender', read_only=True)
     content = serializers.CharField(source='text')
+    file = serializers.FileField(required=False)
 
     class Meta:
         model = PrivateChatMessage
-        fields = ['id', 'user', 'content', 'timestamp']
+        fields = ['id', 'user', 'content', 'timestamp', 'file']
 
     def get_user(self, obj):
         try:

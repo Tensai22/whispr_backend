@@ -7,16 +7,23 @@ from channels.db import database_sync_to_async
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from django.contrib.auth.models import AnonymousUser
 from urllib.parse import parse_qs
-
+import base64
+from django.core.files.base import ContentFile
+import os
+from django.conf import settings
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
         self.user = await self.get_user_from_token()
-        self.room_group_name = None  # Инициализируем room_group_name
+        self.room_group_name = None  # Initialize room_group_name
 
         if self.user.is_authenticated:
-            # Вместо глобальной группы, пользователь будет вступать в приватные чаты
             await self.accept()
+            # Automatically join personal chat group
+            await self.channel_layer.group_add(
+                f"user_{self.user.id}",
+                self.channel_name
+            )
         else:
             await self.close(code=4001)
 
@@ -26,54 +33,99 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     self.room_group_name,
                     self.channel_name
                 )
-
+        if self.user.is_authenticated:
+            await self.channel_layer.group_discard(
+                f"user_{self.user.id}",
+                self.channel_name
+            )
 
     async def receive(self, text_data):
         data = json.loads(text_data)
         message_content = data.get('message', '')
         chat_id = data.get('chatId')
+        file_data = data.get('file')
+        file_name = data.get('filename')
 
         if self.user.is_authenticated:
-          try:
-            chat = await sync_to_async(PrivateChat.objects.get)(id=chat_id, participants__in=[self.user])
-            self.room_group_name = f"chat_{chat.id}"
+            if chat_id:
+                try:
+                    chat = await sync_to_async(PrivateChat.objects.get)(id=chat_id, participants__in=[self.user])
+                    self.room_group_name = f"chat_{chat.id}"
+                    await self.channel_layer.group_add(self.room_group_name, self.channel_name)
 
-            #  Добавляем пользователя в группу
-            await self.channel_layer.group_add(self.room_group_name, self.channel_name)
+                    message = await sync_to_async(PrivateChatMessage.objects.create)(
+                         sender=self.user,
+                         chat=chat,
+                         text=message_content
+                    )
+                    if file_data and file_name:
+                        decoded_file = base64.b64decode(file_data)
+                        message.file.save(f'private_chat_files/{file_name}', ContentFile(decoded_file), save=False)
+                        await sync_to_async(message.save)()
 
+                    try:
+                        profile = await sync_to_async(Profile.objects.get)(user=self.user)
+                        avatar_url = profile.photo.url
+                    except Profile.DoesNotExist:
+                        avatar_url = None
 
-            message = await sync_to_async(PrivateChatMessage.objects.create)(
-                 sender=self.user,
-                 chat=chat,
-                 text=message_content
-            )
+                    print(f"Private message from user {self.user.username} (ID: {self.user.id}): {message_content} in chat {chat_id}")
 
-            try:
-                profile = await sync_to_async(Profile.objects.get)(user=self.user)
-                avatar_url = profile.photo.url
-            except Profile.DoesNotExist:
-                avatar_url = None
+                    await self.channel_layer.group_send(
+                        self.room_group_name,
+                        {
+                            'type': 'chat_message',
+                            'message': {
+                                'id': message.id,
+                                'user': {
+                                    'id': self.user.id,
+                                    'username': self.user.username,
+                                    'avatar_url': avatar_url,
+                                },
+                                'content': message.text,
+                                'timestamp': message.timestamp.isoformat(),
+                                'file': message.file.url if message.file else None,
+                            }
+                        }
+                    )
+                except PrivateChat.DoesNotExist:
+                    print(f"Chat with id {chat_id} not found or user is not a participant")
+            else:
+                # Handle global messages (if needed, adjust group name)
+                self.room_group_name = 'global_chat'  # Or any other global group name
+                await self.channel_layer.group_add(self.room_group_name, self.channel_name)
 
-            print(f"Сообщение от пользователя {self.user.username} (ID: {self.user.id}): {message_content} в чате {chat_id}")
+                message = await sync_to_async(Message.objects.create)(user=self.user, content=message_content)
+                if file_data and file_name:
+                    decoded_file = base64.b64decode(file_data)
+                    message.file.save(f'chat_files/{file_name}', ContentFile(decoded_file), save=False)
+                    await sync_to_async(message.save)()
 
-            await self.channel_layer.group_send(
-               self.room_group_name,
-                {
-                    'type': 'chat_message',
-                    'message': {
-                        'id': message.id,
-                        'user': {
-                            'id': self.user.id,
-                            'username': self.user.username,
-                            'avatar_url': avatar_url,
-                        },
-                        'content': message.text,
-                        'timestamp': message.timestamp.isoformat()
-                    }
+                try:
+                    profile = await sync_to_async(Profile.objects.get)(user=self.user)
+                    avatar_url = profile.photo.url
+                except Profile.DoesNotExist:
+                    avatar_url = None
+
+                message_data = {
+                    'id': message.id,
+                    'user': {
+                        'id': self.user.id,
+                        'username': self.user.username,
+                        'avatar_url': avatar_url,
+                    },
+                    'content': message.content,
+                    'file': message.file.url if message.file else None,
+                    'timestamp': message.timestamp.isoformat()
                 }
-            )
-          except PrivateChat.DoesNotExist:
-                print(f"Chat with id {chat_id} not found or user is not a participant")
+
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': message_data
+                    }
+                )
         else:
             print('User is not authenticated, message not sent.')
 
