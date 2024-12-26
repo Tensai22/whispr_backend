@@ -102,20 +102,20 @@ ASGI_APPLICATION = "Whispr_backend.asgi.application"
 
 #В случай если отсуствует доступ к интернету
 # использовать локальный БД sqlite
-DATABASES = {
+'''DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
     }
-}
-'''DATABASES = {
+}'''
+DATABASES = {
 
     'default': {
         'ENGINE': 'django.db.backends.mysql',
         'NAME': 'defaultdb',
         'USER': 'avnadmin',
-        'PASSWORD': "AVNS_qs4OyVdu1pCCsV6yaIj",
-        'HOST': 'whispr-whispr.i.aivencloud.com',
+        'PASSWORD': "AVNS_UdWfnHm5Skw9Y_mazPU",
+        'HOST': 'whispr-whispr.l.aivencloud.com',
         'PORT': '20839',
         'OPTIONS': {
             'ssl': {
@@ -123,8 +123,10 @@ DATABASES = {
             },
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'"
         },
+
     }
-}'''
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators
