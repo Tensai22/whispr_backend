@@ -19,15 +19,75 @@ class GroupMembershipSerializer(serializers.ModelSerializer):
 class CommunitySerializer(serializers.ModelSerializer):
     admin = serializers.StringRelatedField(read_only=True)
     members = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    photo = serializers.ImageField(required=False)
+    user_role = serializers.SerializerMethodField()
+    moderators = serializers.SerializerMethodField()
 
     class Meta:
         model = Community
-        fields = '__all__'
+        fields = ['id', 'name', 'description', 'photo', 'admin', 'members', 'created_at', 'user_role', 'moderators']
+        #бета тест
+        read_only_fields = ['moderators']
+
+    def get_moderators(self, obj):  # Добавляем метод для получения модераторов
+        moderators = CommunityMembership.objects.filter(community=obj, role='moderator')
+        return [
+            {
+                'id': membership.user.id,
+                'username': membership.user.username,
+            }
+            for membership in moderators
+        ]
+
+    def get_user_role(self, obj):
+        request = self.context.get('request')
+        if request and request.user.is_authenticated:
+            try:
+                membership = CommunityMembership.objects.get(user=request.user, community=obj)
+                return membership.role
+            except CommunityMembership.DoesNotExist:
+                return None
+        return None
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+        user_id = self.context['request'].user.id
+
+        # Добавляем информацию о роли пользователя в сообществе
+        try:
+            membership = CommunityMembership.objects.get(user_id=user_id, community=instance)
+            representation['user_role'] = membership.role
+        except CommunityMembership.DoesNotExist:
+            representation['user_role'] = None
+
+        # Добавляем данные админа
+        if instance.admin:
+            representation['admin'] = {
+                'id': instance.admin.id,
+                'username': instance.admin.username,
+            }
+
+        # Добавляем данные модераторов
+        '''
+        moderators = CommunityMembership.objects.filter(community=instance, role='moderator')
+        representation['moderators'] = [
+            {
+                'id': membership.user.id,
+                'username': membership.user.username,
+            }
+            for membership in moderators
+        ]'''
+        representation['moderators'] = self.get_moderators(instance)
+
+        return representation
 
 class CommunityMembershipSerializer(serializers.ModelSerializer):
+    user = UserSerializer(read_only=True)
+
     class Meta:
         model = CommunityMembership
-        fields = ['user', 'community', 'join_date']
+        fields = ['id', 'user', 'community', 'role', 'join_date']
+        read_only_fields = ['user']
 
 class MessageUserSerializer(serializers.ModelSerializer):
     avatar_url = serializers.SerializerMethodField()

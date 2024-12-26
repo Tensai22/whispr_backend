@@ -209,3 +209,20 @@ CHANNEL_LAYERS = {
 #LOGIN_REDIRECT_URL = "chat-page"
 '''LOGOUT_REDIRECT_URL = "login-user"'''
 LOGIN_URL = "login"
+
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        '': {  # Логгер для всех приложений
+            'handlers': ['console'],
+            'level': 'DEBUG',  # Уровень логирования (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+        },
+    },
+}

@@ -3,6 +3,7 @@ from rest_framework.views import APIView
 from rest_framework import status
 from rest_framework.response import Response
 from .models import Profile
+from rest_framework import generics
 from .serializers import UserSerializer, UserProfileSerializer
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import api_view, permission_classes
@@ -21,6 +22,7 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.views.decorators.csrf import csrf_exempt
 from django.core import serializers
+from django.db.models import Q
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
@@ -65,6 +67,25 @@ class ProfileUpdateView(RetrieveUpdateAPIView):
     permission_classes = [IsAuthenticated]
     def get_object(self):
         return self.request.user
+
+class UserDetailView(generics.RetrieveAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        instance = self.get_object()
+        # Если запрашивается информация о текущем пользователе, возвращаем полные данные
+        if instance == request.user:
+            serializer = self.get_serializer(instance)
+            return Response(serializer.data)
+        else:
+            # Для других пользователей возвращаем ограниченные данные
+            return Response({
+                'id': instance.id,
+                'username': instance.username,
+                'profile_photo': instance.profile.photo.url if instance.profile.photo else None
+            })
 
 
 @api_view(['POST'])
@@ -197,3 +218,18 @@ class UserProfileView(APIView):
         user = request.user
         serializer = UserProfileSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+@csrf_exempt
+def get_users_with_messages(request):
+    # Получаем текущего пользователя
+    user = request.user
+    # Ищем всех пользователей, с которыми был обмен сообщениями
+    users = User.objects.filter(
+        Q(sender=user) | Q(receiver=user)
+    ).distinct()
+    # Сериализация данных
+    users_json = serializers.serialize('json', users, fields=('id', 'username'))
+    users_data = json.loads(users_json)
+    # Формируем список пользователей
+    users_list = [{"id": user['pk'], "username": user['fields']['username']} for user in users_data]
+    return JsonResponse(users_list, safe=False)

@@ -12,20 +12,31 @@ class Message(models.Model):
 class Community(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name='Название')
     description = models.TextField(blank=True, verbose_name='Описание')
-    admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_communities', verbose_name='Администратор')
-    members = models.ManyToManyField(User, through='CommunityMembership', related_name='communities', verbose_name='Участники')
+    photo = models.ImageField(upload_to='community_photos/', blank=True, null=True, verbose_name='Фото сообщества')
+    admin = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='admin_communities',
+                              verbose_name='Администратор')
+    members = models.ManyToManyField(User, through='CommunityMembership', related_name='communities',
+                                     verbose_name='Участники')
     created_at = models.DateTimeField(auto_now_add=True, verbose_name='Дата создания')
-
     def __str__(self):
         return self.name
 
 class CommunityMembership(models.Model):
+    ROLE_CHOICES = (
+        ('member', 'Участник'),
+        ('moderator', 'Модератор'),
+        ('admin', 'Администратор'),
+    )
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     community = models.ForeignKey(Community, on_delete=models.CASCADE)
-    ole = models.CharField(max_length=50,
-                           choices=[('member', 'Участник'), ('moderator', 'Модератор'), ('admin', 'Администратор')],
-                           default='member', verbose_name='Роль')
+    role = models.CharField(max_length=50, choices=ROLE_CHOICES, default='member', verbose_name='Роль')
     join_date = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'community')
+
+    def __str__(self):
+        return f"{self.user.username} in {self.community.name}"
 
 class Group(models.Model):
     name = models.CharField(max_length=255, unique=True, verbose_name='Название')
