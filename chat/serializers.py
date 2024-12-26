@@ -1,3 +1,4 @@
+# chat/serializers.py
 from rest_framework import serializers
 
 from logic.serializers import UserSerializer
@@ -105,9 +106,11 @@ class MessageUserSerializer(serializers.ModelSerializer):
 class MessageSerializer(serializers.ModelSerializer):
     user = MessageUserSerializer(read_only=True)
     file = serializers.FileField(required=False)
+    group = serializers.PrimaryKeyRelatedField(queryset=Group.objects.all(), required=False, allow_null=True)
     class Meta:
         model = Message
-        fields = ['id', 'user', 'content', 'timestamp', 'file']
+        fields = ['id', 'user', 'content', 'timestamp', 'file', 'group']
+
 
 class PrivateChatSerializer(serializers.ModelSerializer):
     participants = serializers.PrimaryKeyRelatedField(many=True, queryset=User.objects.all())
@@ -130,7 +133,6 @@ class PrivateChatMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrivateChatMessage
         fields = ['id', 'user', 'content', 'timestamp', 'file']
-
     def get_user(self, obj):
         try:
             profile = Profile.objects.get(user=obj.sender)

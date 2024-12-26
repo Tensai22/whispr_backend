@@ -5,6 +5,8 @@ class Message(models.Model):
     content = models.TextField()
     file = models.FileField(upload_to='chat_files/', blank=True, null=True)
     timestamp = models.DateTimeField(auto_now_add=True)
+    group = models.ForeignKey('Group', on_delete=models.CASCADE, null=True, blank=True, related_name='group_messages')
+
 
     def __str__(self):
         return f"{self.user.username}: {self.content[:50]}"

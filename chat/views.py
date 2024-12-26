@@ -1,3 +1,4 @@
+# chat/views.py
 import json
 from django.http import JsonResponse
 from django.shortcuts import render
@@ -57,13 +58,17 @@ class GroupCreateView(ListCreateAPIView):
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
 
+    def perform_create(self, serializer):
+         group = serializer.save(admin=self.request.user)
+         GroupMembership.objects.create(user=self.request.user, group=group, role='admin')
+
 
 class GroupDetailView(RetrieveUpdateDestroyAPIView):
     queryset = Group.objects.all()
     serializer_class = GroupSerializer
     permission_classes = [IsAuthenticated]
 
-class GroupMembershipListView(ListAPIView):
+class GroupMembershipListView(ListCreateAPIView):
     queryset = GroupMembership.objects.all()
     serializer_class = GroupMembershipSerializer
     permission_classes = [IsAuthenticated]
@@ -214,6 +219,35 @@ class UserCommunitiesListView(generics.ListAPIView):
         user = self.request.user
         return Community.objects.filter(members=user)
 
+
+class UserGroupsListView(generics.ListAPIView):
+    serializer_class = GroupSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return Group.objects.filter(members=user)
+
+class GroupMessagesView(ListCreateAPIView):
+    serializer_class = MessageSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        group_pk = self.kwargs['pk']
+        try:
+          group = Group.objects.get(pk=group_pk, members=self.request.user)
+        except Group.DoesNotExist:
+            return Message.objects.none()
+        messages = group.group_messages.all().order_by('timestamp')
+        return messages
+    def perform_create(self, serializer):
+        group_pk = self.kwargs['pk']
+        try:
+            group = Group.objects.get(pk=group_pk, members__in=[self.request.user])
+        except Group.DoesNotExist:
+            return
+        serializer.save(user=self.request.user, group=group)
+
 class UserDetailView(generics.RetrieveAPIView):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -221,12 +255,10 @@ class UserDetailView(generics.RetrieveAPIView):
 
     def get(self, request, *args, **kwargs):
         instance = self.get_object()
-        # Если запрашивается информация о текущем пользователе, возвращаем полные данные
         if instance == request.user:
             serializer = self.get_serializer(instance)
             return Response(serializer.data)
         else:
-            # Для других пользователей возвращаем ограниченные данные
             return Response({
                 'id': instance.id,
                 'username': instance.username,
